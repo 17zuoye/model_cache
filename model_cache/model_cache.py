@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 import os
-
 from .store.sqlite import ModelCacheStoreSqlite
 from .store.redis  import ModelCacheStoreRedis
 
@@ -11,6 +10,22 @@ class ModelCache(object):
 
     datadict_type = ["sqlite", "redis"][0]
     datadict      = None
+
+    def __init__(self, record):
+        self.load_data(record)
+
+        assert self.item_id, "self.item_id should be assign in self.load_data function!"
+        assert type(self.item_content) in [str, unicode], "self.item_content should be assign in self.load_data function!"
+
+    def load_data(self, record):
+        """
+        extract data.
+        e.g. self.item_id, self.item_content, etc...
+        """
+        raise NotImplemented
+
+    def dump_record(self, record):
+        return json.dumps(record)
 
     def has_item_id(self, record):
         """ Detect if there is an item_id, which should be already wrote to database """
@@ -54,3 +69,7 @@ class ModelCache(object):
 
     @classmethod
     def count(cls): return len(cls.datadict)
+
+    @classmethod
+    def filter_deleted(cls, record):
+        return False
