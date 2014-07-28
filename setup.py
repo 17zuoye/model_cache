@@ -9,7 +9,7 @@ setup(
     author_email=''.join(reversed("moc.liamg@emojvm")),
     description='model_cache',
     long_description='model_cache',
-    packages=['model_cache'],
+    packages=['model_cache', 'model_cache/store'],
     include_package_data=True,
     zip_safe=False,
     platforms='any',
