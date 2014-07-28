@@ -1,14 +1,13 @@
 # -*- coding: utf-8 -*-
 
 import os
-from .store.sqlite import ModelCacheStoreSqlite
-from .store.redis  import ModelCacheStoreRedis
+from .store import *
 
 class ModelCache(object):
 
     cache_dir     = None
 
-    datadict_type = ["sqlite", "redis"][0]
+    datadict_type = ["memory", "sqlite", "redis"][1]
     datadict      = None
 
     def __init__(self, record):
@@ -33,10 +32,13 @@ class ModelCache(object):
 
     @classmethod
     def init_datadict(cls):
+        assert cls.cache_dir, u"cache_dir should be seted."
+
         class_name = repr(cls).split("'")[1].split(".")[-1]
         dbpath = os.path.join(cls.cache_dir, class_name + ".db")
 
         cls.datadict = {
+            "memory" : ModelCacheStoreMemory,
             "sqlite" : ModelCacheStoreSqlite,
             "redis"  : ModelCacheStoreRedis,
         }[cls.datadict_type](dbpath)
