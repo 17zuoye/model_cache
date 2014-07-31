@@ -6,6 +6,7 @@ from .storage import *
 from .load_data import LoadData
 
 class ModelCache(LoadData):
+    original_model = None
 
     cache_dir     = None
 
@@ -35,6 +36,7 @@ class ModelCache(LoadData):
     @classmethod
     def init_datadict(cls):
         assert cls.cache_dir, u"cache_dir should be seted."
+        assert cls.original_model, u"original_model should be seted."
 
         class_name = repr(cls).split("'")[1].split(".")[-1]
         dbpath = os.path.join(cls.cache_dir, class_name + ".db")

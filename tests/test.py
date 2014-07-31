@@ -7,8 +7,17 @@ sys.path.insert(0, root_dir)
 import unittest
 from model_cache import ModelCache
 
+class OriginalModel(list):
+    def __init__(self, list1):
+        super(OriginalModel, self).__init__(list1)
+        self.__module__ = None
+
+    def count(self): return len(self)
+
 def generate_test_model_cache():
     class Foobar(ModelCache):
+        original_model = OriginalModel
+
         datadict_type = "memory"
         cache_dir     = "tmp"
 
@@ -45,13 +54,6 @@ class TestModelCache(unittest.TestCase):
 
     def test_load_from(self):
         Foobar = self.Foobar
-
-        class OriginalModel(list):
-            def __init__(self, list1):
-                super(OriginalModel, self).__init__(list1)
-                self.__module__ = None
-
-            def count(self): return len(self)
 
         original_model_data = OriginalModel([{'id': idx1, 'content': 'content_' + str(idx1)} for idx1 in xrange(100000)])
         setattr(original_model_data, '__module__', 'original_model')
