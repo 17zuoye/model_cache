@@ -3,8 +3,9 @@
 import os
 import json
 from .storage import *
+from .load_data import LoadData
 
-class ModelCache(object):
+class ModelCache(LoadData):
 
     cache_dir     = None
 
@@ -49,8 +50,6 @@ class ModelCache(object):
 
     @classmethod
     def build_indexes(cls, items=[]):
-        cls.init_datadict()
-
         # items 必定是list, 经过cPickle反序列化回来的
         cls.datadict.build_indexes(items)
 
