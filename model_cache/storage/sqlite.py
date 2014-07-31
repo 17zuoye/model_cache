@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from .base import ModelCacheStore
+from ._base import ModelCacheStore
 
 class ModelCacheStoreSqlite(ModelCacheStore):
     """ BTree查找实现 """

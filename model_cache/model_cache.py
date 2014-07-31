@@ -2,7 +2,7 @@
 
 import os
 import json
-from .store import *
+from .storage import *
 
 class ModelCache(object):
 
