@@ -1,7 +1,7 @@
 Model Cache
 ======================
-Model cache, stored in memory, sqlite or redis.
-
+Cache data in `{ item_id => item_content }` format, supported storage
+are memory, sqlite and redis.
 
 
 License
