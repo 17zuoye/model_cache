@@ -4,9 +4,30 @@ import os
 import json
 from .storage import *
 from .load_data import LoadData
+from bunch import Bunch
+from classproperty import classproperty
 
 class ModelCache(LoadData):
-    original_model = None
+    class original(classproperty):
+        def __get__(self):
+            self.b1 = Bunch()
+            self.b1.model          = None
+            self.b1.percentage     = 0.9999
+            self.b1.filter_lambda  = lambda item1: False
+            self.b1.read_id_lambda = lambda item1: str(item1['_id'])
+            return self.b1
+
+    @ModelCache.update_original(attr1, attr2)
+    class MathQuestion(ModelCache):
+        pass
+
+    """
+    original                = Bunch()
+    original.model          = None
+    original.percentage     = 0.9999
+    original.filter_lambda  = lambda item1: False
+    original.read_id_lambda = lambda item1: str(item1['_id'])
+    """
 
     cache_dir     = None
 
@@ -36,7 +57,8 @@ class ModelCache(LoadData):
     @classmethod
     def init_datadict(cls):
         assert cls.cache_dir, u"cache_dir should be seted."
-        assert cls.original_model, u"original_model should be seted."
+
+        assert cls.original.model, u"original_model should be seted."
 
         class_name = repr(cls).split("'")[1].split(".")[-1]
         dbpath = os.path.join(cls.cache_dir, class_name + ".db")
