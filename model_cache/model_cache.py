@@ -41,17 +41,7 @@ class ModelCache():
             _model_cache.__name__ = decorated_class.__name__
             _model_cache.__module__ = decorated_class.__module__ # so can pickle :)
 
-            dbpath = None
-            if _model_cache.original.cache_dir:
-                dbpath = os.path.join(_model_cache.original.cache_dir, \
-                        repr(_model_cache).split("'")[1].split(".")[-1] + ".db")
-
-            _model_cache.datadict = {
-                "memory" : ModelCacheStoreMemory,
-                "sqlite" : ModelCacheStoreSqlite,
-                "redis"  : ModelCacheStoreRedis,
-            }[_model_cache.original.storage_type](dbpath)
-            print "[ModelCache] Init at %s" % (dbpath or '[memory]')
+            _model_cache.connect()
 
             return _model_cache
         return _model_cache_decorator

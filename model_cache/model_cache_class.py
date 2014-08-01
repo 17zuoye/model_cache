@@ -43,6 +43,25 @@ class ModelCacheClass(object):
         raise NotImplemented
 
     @classmethod
+    def connect(cls): cls.reconnect(is_reconnect=False)
+
+    @classmethod
+    def reconnect(cls, is_reconnect=True):
+        dbpath = None
+        if cls.original.cache_dir:
+            dbpath = os.path.join(cls.original.cache_dir, \
+                    repr(cls).split("'")[1].split(".")[-1] + ".db")
+
+        cls.datadict = {
+            "memory" : ModelCacheStoreMemory,
+            "sqlite" : ModelCacheStoreSqlite,
+            "redis"  : ModelCacheStoreRedis,
+        }[cls.original.storage_type](dbpath)
+
+        msg = 'Reconnect' if is_reconnect else 'Init'
+        print "[ModelCache] %s at %s" % (msg, dbpath or '[memory]')
+
+    @classmethod
     def build_indexes(cls, items=[]):
         # items 必定是list, 经过cPickle反序列化回来的
         """ 也许reopen在build_indexes解决sqlite close等问题 """
