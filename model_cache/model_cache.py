@@ -1,12 +1,8 @@
 # -*- coding: utf-8 -*-
 
-import os
-import json
-from .storage import *
-from .load_data import LoadData
-from etl_utils import process_notifier
+from .model_cache_class import *
 
-class ModelCache(LoadData):
+class ModelCache(ModelCacheClass):
     valid_storage_types = ("memory", "sqlite", "redis")
 
     @classmethod
@@ -57,50 +53,3 @@ class ModelCache(LoadData):
 
             return _model_cache
         return _model_cache_decorator
-
-
-class ModelCacheClass(object):
-
-    def __init__(self, record={}):
-        self.load_data(record)
-
-        assert self.item_id, "self.item_id should be assign in self.load_data function!"
-        assert type(self.item_content) in [str, unicode], \
-                "self.item_content should be assign in self.load_data function!"
-
-    def load_data(self, record):
-        """
-        extract data.
-        e.g. self.item_id, self.item_content, etc...
-        """
-        raise NotImplemented
-
-    def dump_record(self, record):
-        return json.dumps(record)
-
-    def has_item_id(self, record):
-        """ Detect if there is an item_id, which should be already wrote to database """
-        raise NotImplemented
-
-    @classmethod
-    def build_indexes(cls, items=[]):
-        # items 必定是list, 经过cPickle反序列化回来的
-        """ 也许reopen在build_indexes解决sqlite close等问题 """
-        cls.datadict.build_indexes(items)
-
-    @classmethod
-    def find(cls, object_id):
-        return cls.datadict.datadict.get(str(object_id), None)
-
-    @classmethod
-    def remove(cls, object_id):
-        object_id = str(object_id)
-        if cls.datadict.has_key(object_id):
-            del cls.datadict[object_id]
-
-    @classmethod
-    def count(cls): return len(cls.datadict)
-
-    @classmethod
-    def filter_deleted(cls, record):
-        return False

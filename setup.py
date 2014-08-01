@@ -3,7 +3,7 @@ from setuptools import setup
 setup(
     name='model_cache',
     version='0.0.2',
-    url='http://github.com/mvj3/model_cache/',
+    url='http://github.com/17zuoye/model_cache/',
     license='MIT',
     author='David Chen',
     author_email=''.join(reversed("moc.liamg@emojvm")),

@@ -61,8 +61,7 @@ class TestModelCache(unittest.TestCase):
         setattr(original_model_data, '__module__', 'original_model')
 
         Foobar = generate_test_model_cache(original_model_data)
-        #import pdb; pdb.set_trace()
 
-        #Foobar.load_from(original_model_data)
+        Foobar.pull_data()
 
 if __name__ == '__main__': unittest.main()
