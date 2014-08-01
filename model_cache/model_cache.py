@@ -4,41 +4,56 @@ import os
 import json
 from .storage import *
 from .load_data import LoadData
-from bunch import Bunch
-from classproperty import classproperty
+from etl_utils import process_notifier
 
 class ModelCache(LoadData):
-    class original(classproperty):
-        def __get__(self):
-            self.b1 = Bunch()
-            self.b1.model          = None
-            self.b1.percentage     = 0.9999
-            self.b1.filter_lambda  = lambda item1: False
-            self.b1.read_id_lambda = lambda item1: str(item1['_id'])
-            return self.b1
+    valid_storage_types = ("memory", "sqlite", "redis")
 
-    @ModelCache.update_original(attr1, attr2)
-    class MathQuestion(ModelCache):
-        pass
+    @classmethod
+    def config(cls, original_model, **kwargs):
+        # assert original_model's behavior
+        process_notifier(original_model)
 
-    """
-    original                = Bunch()
-    original.model          = None
-    original.percentage     = 0.9999
-    original.filter_lambda  = lambda item1: False
-    original.read_id_lambda = lambda item1: str(item1['_id'])
-    """
+        # setup args
+        default_kwargs = {
+                    'cache_dir'      : None,
+                    'storage_type'   : None,
+                    'percentage'     : 0.9999,
+                    'filter_lambda'  : lambda item1: False,
+                    'read_id_lambda' : lambda item1: str(item1['_id']),
+                }
+        for k1, v1 in kwargs.iteritems():
+            if k1 in default_kwargs:
+                default_kwargs[k1] = v1
 
-    cache_dir     = None
+        # validate storage
+        assert default_kwargs['storage_type'] in ModelCache.valid_storage_types
+        if (default_kwargs['cache_dir'] is None) and (default_kwargs['storage_type'] != "memory"):
+            raise Exception(u"`cache_dir` should not be None when storage_type is not memory.")
 
-    datadict_type = ["memory", "sqlite", "redis"][1]
-    datadict      = None
+        # decorate class
+        def _model_cache_decorator(decorated_class):
+            # ensure decorated_class's methods will overwrite ModelCache's.
+            class _model_cache(decorated_class, ModelCacheClass):
+                class OriginalClass(): pass
+                original = OriginalClass()
+                for k1, v1 in default_kwargs.iteritems():
+                    setattr(original, k1, v1)
+                    del k1; del v1
+                original.model   = original_model
+            _model_cache.__name__ = decorated_class.__name__
+            return _model_cache
+        return _model_cache_decorator
 
-    def __init__(self, record):
+
+class ModelCacheClass(object):
+
+    def __init__(self, record={}):
         self.load_data(record)
 
         assert self.item_id, "self.item_id should be assign in self.load_data function!"
-        assert type(self.item_content) in [str, unicode], "self.item_content should be assign in self.load_data function!"
+        assert type(self.item_content) in [str, unicode], \
+                "self.item_content should be assign in self.load_data function!"
 
     def load_data(self, record):
         """
@@ -56,18 +71,17 @@ class ModelCache(LoadData):
 
     @classmethod
     def init_datadict(cls):
-        assert cls.cache_dir, u"cache_dir should be seted."
-
-        assert cls.original.model, u"original_model should be seted."
-
+        """ TODO 也许datadict可以作为属性，如果失效就重新生成，参考cache_property """
         class_name = repr(cls).split("'")[1].split(".")[-1]
-        dbpath = os.path.join(cls.cache_dir, class_name + ".db")
+        dbpath = None
+        if cls.original.cache_dir:
+            dbpath = os.path.join(cls.original.cache_dir, class_name + ".db")
 
         cls.datadict = {
             "memory" : ModelCacheStoreMemory,
             "sqlite" : ModelCacheStoreSqlite,
             "redis"  : ModelCacheStoreRedis,
-        }[cls.datadict_type](dbpath)
+        }[cls.original.storage_type](dbpath)
         print "[ModelCache] Init at %s" % dbpath
 
         return cls.datadict
@@ -79,13 +93,7 @@ class ModelCache(LoadData):
 
     @classmethod
     def find(cls, object_id):
-        object_id = str(object_id)
-
-        if cls.datadict.has_key(object_id):
-            return cls.datadict[object_id]
-        else:
-            print "跳过 [%s] 这个被过滤的Question, 因为它的['enabled']或['verify']['verified']是False" % object_id
-            return None
+        return cls.datadict.datadict.get(str(object_id), None)
 
     @classmethod
     def remove(cls, object_id):

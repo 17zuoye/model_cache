@@ -14,15 +14,17 @@ class OriginalModel(list):
 
     def count(self): return len(self)
 
-import pdb; pdb.set_trace()
-def generate_test_model_cache():
-    class Foobar(ModelCache):
-        original.model            = OriginalModel
-        original.read_id_lambda   = lambda item1: item1['id']
 
-        datadict_type = "memory"
-        cache_dir     = "tmp"
 
+
+def generate_test_model_cache(data):
+    attrs = {
+              'read_id_lambda' : lambda item1: item1['id'],
+              'storage_type'   : 'memory',
+             }
+
+    @ModelCache.config(data, **attrs)
+    class Foobar(object):
         inc = 0
 
         def load_data(self, record):
@@ -31,21 +33,21 @@ def generate_test_model_cache():
             self.item_content = unicode(self.item_id)
     return Foobar
 
+
+
+
 class TestModelCache(unittest.TestCase):
 
-    def setUp(self):
-        self.Foobar = generate_test_model_cache()
-        self.Foobar.init_datadict()
-
     def test_import(self):
-        Foobar = self.Foobar
+        Foobar = generate_test_model_cache({})
+        Foobar.init_datadict()
 
         self.assertTrue("datadict" in Foobar.__dict__)
         self.assertEqual(Foobar.count(), 0)
 
-        f1 = Foobar({})
-        f2 = Foobar({})
-        f3 = Foobar({})
+        f1 = Foobar()
+        f2 = Foobar()
+        f3 = Foobar()
 
         Foobar.build_indexes([f1, f2, f3])
         self.assertEqual(Foobar.count(), 3)
@@ -55,11 +57,14 @@ class TestModelCache(unittest.TestCase):
         self.assertEqual(Foobar.count(), 2)
 
     def test_load_from(self):
-        Foobar = self.Foobar
-
-        original_model_data = OriginalModel([{'id': idx1, 'content': 'content_' + str(idx1)} for idx1 in xrange(100000)])
+        original_model_data = OriginalModel([ \
+                {'id': idx1, 'content': 'content_' + str(idx1)} for idx1 in xrange(100000)])
         setattr(original_model_data, '__module__', 'original_model')
 
-        Foobar.load_from(original_model_data)
+        Foobar = generate_test_model_cache(original_model_data)
+        Foobar.init_datadict()
+        #import pdb; pdb.set_trace()
+
+        #Foobar.load_from(original_model_data)
 
 if __name__ == '__main__': unittest.main()
