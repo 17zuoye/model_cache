@@ -2,11 +2,11 @@
 
 from .model_cache_class import *
 
-class ModelCache(ModelCacheClass):
-    valid_storage_types = ("memory", "sqlite", "redis")
+valid_storage_types = ("memory", "sqlite", "redis")
 
+class ModelCache():
     @classmethod
-    def config(cls, original_model, **kwargs):
+    def connect(cls, original_model, **kwargs):
         # assert original_model's behavior
         process_notifier(original_model)
 
@@ -23,7 +23,7 @@ class ModelCache(ModelCacheClass):
                 default_kwargs[k1] = v1
 
         # validate storage
-        assert default_kwargs['storage_type'] in ModelCache.valid_storage_types
+        assert default_kwargs['storage_type'] in valid_storage_types
         if (default_kwargs['cache_dir'] is None) and (default_kwargs['storage_type'] != "memory"):
             raise Exception(u"`cache_dir` should not be None when storage_type is not memory.")
 

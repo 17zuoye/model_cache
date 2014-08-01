@@ -23,7 +23,7 @@ def generate_test_model_cache(data):
               'storage_type'   : 'memory',
              }
 
-    @ModelCache.config(data, **attrs)
+    @ModelCache.connect(data, **attrs)
     class Foobar(object):
         inc = 0
 
