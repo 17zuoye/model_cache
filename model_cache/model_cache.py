@@ -17,8 +17,7 @@ class ModelCache():
                     'percentage'     : 0.9999,
                     'filter_lambda'  : lambda item1: False,
                     'read_id_lambda' : lambda item1: str(item1['_id']),
-                    'init__before'   : lambda item1: None,
-                    'init__after'    : lambda item1: None,
+                    'included_class' : object,
                 }
         for k1, v1 in kwargs.iteritems():
             if k1 in default_kwargs:
@@ -32,7 +31,7 @@ class ModelCache():
         # decorate class
         def _model_cache_decorator(decorated_class):
             # ensure decorated_class's methods will overwrite ModelCache's.
-            class _model_cache(decorated_class, ModelCacheClass):
+            class _model_cache(decorated_class, ModelCacheClass, default_kwargs['included_class']):
                 class OriginalClass(): pass # so we can setattr here.
                 original = OriginalClass()
                 for k1, v1 in default_kwargs.iteritems():

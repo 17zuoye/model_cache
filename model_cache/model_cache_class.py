@@ -14,7 +14,7 @@ class ModelCacheClass(object):
             `__init__after` this name style will conflict with default \
             python object functions.
             """
-        self.original.init__before(record)
+        self.init__before(record)
 
         self.init__load_data(record)
 
@@ -22,7 +22,9 @@ class ModelCacheClass(object):
         assert type(self.item_content) in [str, unicode], \
                 "self.item_content should be assign in self.load_data function!"
 
-        self.original.init__after(record)
+        self.init__after(record)
+
+    def init__before(self, record): pass
 
     def init__load_data(self, record):
         """
@@ -30,6 +32,8 @@ class ModelCacheClass(object):
         e.g. self.item_id, self.item_content, etc...
         """
         raise NotImplemented
+
+    def init__after(self, record): pass
 
     def dump_record(self, record):
         return json.dumps(record)
