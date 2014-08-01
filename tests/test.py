@@ -15,12 +15,15 @@ class OriginalModel(list):
     def count(self): return len(self)
 
 
+class IncludedClass(object):
+    def im_include(self): return 1
 
 
 def generate_test_model_cache(data):
     attrs = {
               'read_id_lambda' : lambda item1: item1['id'],
               'storage_type'   : 'memory',
+              'included_class' : IncludedClass,
              }
 
     @ModelCache.connect(data, **attrs)
@@ -63,5 +66,9 @@ class TestModelCache(unittest.TestCase):
         Foobar = generate_test_model_cache(original_model_data)
 
         Foobar.pull_data()
+
+    def test_included_class(self):
+        Foobar = generate_test_model_cache({})
+        self.assertEqual(Foobar().im_include(), 1)
 
 if __name__ == '__main__': unittest.main()
