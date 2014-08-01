@@ -44,18 +44,18 @@ class TestModelCache(unittest.TestCase):
         Foobar = generate_test_model_cache({})
 
         self.assertTrue("datadict" in Foobar.__dict__)
-        self.assertEqual(Foobar.count(), 0)
+        self.assertEqual(len(Foobar), 0)
 
         f1 = Foobar()
         f2 = Foobar()
         f3 = Foobar()
 
         Foobar.build_indexes([f1, f2, f3])
-        self.assertEqual(Foobar.count(), 3)
-        self.assertTrue(Foobar.find(3), f3)
+        self.assertEqual(len(Foobar), 3)
+        self.assertEqual(Foobar[3], f3)
 
         Foobar.remove(1)
-        self.assertEqual(Foobar.count(), 2)
+        self.assertEqual(len(Foobar), 2)
 
     def test_load_from(self):
         original_model_data = OriginalModel([ \

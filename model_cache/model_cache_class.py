@@ -38,6 +38,7 @@ class ModelCacheClass(object):
     def dump_record(self, record):
         return json.dumps(record)
 
+
     def has_item_id(self, record):
         """ Detect if there is an item_id, which should be already wrote to database """
         raise NotImplemented
@@ -69,17 +70,10 @@ class ModelCacheClass(object):
         cls.datadict.sync()
 
     @classmethod
-    def find(cls, object_id):
-        return cls.datadict.datadict.get(str(object_id), None)
-
-    @classmethod
     def remove(cls, object_id):
         object_id = str(object_id)
         if cls.datadict.has_key(object_id):
             del cls.datadict[object_id]
-
-    @classmethod
-    def count(cls): return len(cls.datadict)
 
     @classmethod
     def filter_deleted(cls, record):
@@ -89,7 +83,7 @@ class ModelCacheClass(object):
     def pull_data(cls):
         print; print "LOAD %s INTO %s" % (cls.original.model.__module__, cls.__module__)
 
-        if cls.count() / float(cls.original.model.count()) < cls.original.percentage:
+        if len(cls) / float(cls.original.model.count()) < cls.original.percentage:
             print "[load ids cache] ..."
             ids_cache = {str(i1.item_id) : True for i1 in process_notifier(cls.datadict.datadict)}
 
