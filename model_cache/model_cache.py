@@ -13,7 +13,7 @@ class ModelCache(ModelCacheClass):
         # setup args
         default_kwargs = {
                     'cache_dir'      : None,
-                    'storage_type'   : None,
+                    'storage_type'   : 'sqlite',
                     'percentage'     : 0.9999,
                     'filter_lambda'  : lambda item1: False,
                     'read_id_lambda' : lambda item1: str(item1['_id']),
