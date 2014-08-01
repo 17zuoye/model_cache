@@ -27,7 +27,7 @@ def generate_test_model_cache(data):
     class Foobar(object):
         inc = 0
 
-        def load_data(self, record):
+        def init__load_data(self, record):
             Foobar.inc += 1
             self.item_id = Foobar.inc
             self.item_content = unicode(self.item_id)

@@ -8,13 +8,23 @@ from etl_utils import process_notifier
 class ModelCacheClass(object):
 
     def __init__(self, record={}):
-        self.load_data(record)
+        """ You should overwrite `init__before` and `init__after`, \
+            instead of this `__init__` function.
+
+            `__init__after` this name style will conflict with default \
+            python object functions.
+            """
+        self.original.init__before(record)
+
+        self.init__load_data(record)
 
         assert self.item_id, "self.item_id should be assign in self.load_data function!"
         assert type(self.item_content) in [str, unicode], \
                 "self.item_content should be assign in self.load_data function!"
 
-    def load_data(self, record):
+        self.original.init__after(record)
+
+    def init__load_data(self, record):
         """
         extract data.
         e.g. self.item_id, self.item_content, etc...
