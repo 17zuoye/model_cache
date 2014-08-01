@@ -10,7 +10,6 @@ from model_cache import ModelCache
 class OriginalModel(list):
     def __init__(self, list1):
         super(OriginalModel, self).__init__(list1)
-        self.__module__ = None
 
     def count(self): return len(self)
 

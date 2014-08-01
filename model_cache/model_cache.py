@@ -31,7 +31,7 @@ class ModelCache():
         # decorate class
         def _model_cache_decorator(decorated_class):
             # ensure decorated_class's methods will overwrite ModelCache's.
-            class _model_cache(decorated_class, ModelCacheClass, default_kwargs['included_class']):
+            class _model_cache(decorated_class, default_kwargs['included_class'], ModelCacheClass):
                 class OriginalClass(): pass # so we can setattr here.
                 original = OriginalClass()
                 for k1, v1 in default_kwargs.iteritems():
@@ -39,6 +39,7 @@ class ModelCache():
                     del k1; del v1
                 original.model   = original_model
             _model_cache.__name__ = decorated_class.__name__
+            _model_cache.__module__ = decorated_class.__module__ # so can pickle :)
 
             dbpath = None
             if _model_cache.original.cache_dir:
