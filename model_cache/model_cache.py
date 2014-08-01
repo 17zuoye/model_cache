@@ -35,13 +35,26 @@ class ModelCache(LoadData):
         def _model_cache_decorator(decorated_class):
             # ensure decorated_class's methods will overwrite ModelCache's.
             class _model_cache(decorated_class, ModelCacheClass):
-                class OriginalClass(): pass
+                class OriginalClass(): pass # so we can setattr here.
                 original = OriginalClass()
                 for k1, v1 in default_kwargs.iteritems():
                     setattr(original, k1, v1)
                     del k1; del v1
                 original.model   = original_model
             _model_cache.__name__ = decorated_class.__name__
+
+            dbpath = None
+            if _model_cache.original.cache_dir:
+                dbpath = os.path.join(_model_cache.original.cache_dir, \
+                        repr(_model_cache).split("'")[1].split(".")[-1] + ".db")
+
+            _model_cache.datadict = {
+                "memory" : ModelCacheStoreMemory,
+                "sqlite" : ModelCacheStoreSqlite,
+                "redis"  : ModelCacheStoreRedis,
+            }[_model_cache.original.storage_type](dbpath)
+            print "[ModelCache] Init at %s" % (dbpath or '[memory]')
+
             return _model_cache
         return _model_cache_decorator
 
@@ -70,25 +83,9 @@ class ModelCacheClass(object):
         raise NotImplemented
 
     @classmethod
-    def init_datadict(cls):
-        """ TODO 也许datadict可以作为属性，如果失效就重新生成，参考cache_property """
-        class_name = repr(cls).split("'")[1].split(".")[-1]
-        dbpath = None
-        if cls.original.cache_dir:
-            dbpath = os.path.join(cls.original.cache_dir, class_name + ".db")
-
-        cls.datadict = {
-            "memory" : ModelCacheStoreMemory,
-            "sqlite" : ModelCacheStoreSqlite,
-            "redis"  : ModelCacheStoreRedis,
-        }[cls.original.storage_type](dbpath)
-        print "[ModelCache] Init at %s" % dbpath
-
-        return cls.datadict
-
-    @classmethod
     def build_indexes(cls, items=[]):
         # items 必定是list, 经过cPickle反序列化回来的
+        """ 也许reopen在build_indexes解决sqlite close等问题 """
         cls.datadict.build_indexes(items)
 
     @classmethod

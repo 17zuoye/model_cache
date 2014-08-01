@@ -40,7 +40,6 @@ class TestModelCache(unittest.TestCase):
 
     def test_import(self):
         Foobar = generate_test_model_cache({})
-        Foobar.init_datadict()
 
         self.assertTrue("datadict" in Foobar.__dict__)
         self.assertEqual(Foobar.count(), 0)
@@ -62,7 +61,6 @@ class TestModelCache(unittest.TestCase):
         setattr(original_model_data, '__module__', 'original_model')
 
         Foobar = generate_test_model_cache(original_model_data)
-        Foobar.init_datadict()
         #import pdb; pdb.set_trace()
 
         #Foobar.load_from(original_model_data)
