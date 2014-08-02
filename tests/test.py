@@ -26,7 +26,7 @@ def generate_test_model_cache(data):
              }
 
     @ModelCache.connect(data, **attrs)
-    class Foobar(object):
+    class Foobar():
         inc = 0
 
         def init__load_data(self, record):
