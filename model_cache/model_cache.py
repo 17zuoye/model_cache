@@ -30,8 +30,10 @@ class ModelCache():
 
         # decorate class
         def _model_cache_decorator(decorated_class):
-            # ensure decorated_class's methods will overwrite ModelCache's.
-            class _model_cache(decorated_class, default_kwargs['included_class'], ModelCacheClass):
+            # 1. included_class should not overwrite ModelCacheClass's important methods,
+            #    include `__init__`, `init__before`, `init__after`.
+            # 2. ensure decorated_class's methods will overwrite ModelCache's.
+            class _model_cache(decorated_class, ModelCacheClass, default_kwargs['included_class']):
                 class OriginalClass(): pass # so we can setattr here.
                 original = OriginalClass()
                 for k1, v1 in default_kwargs.iteritems():
