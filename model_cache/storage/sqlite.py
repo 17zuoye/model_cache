@@ -10,4 +10,3 @@ class ModelCacheStoreSqlite(ModelCacheStore):
         self.datadict = SqliteDict(name)
 
     def sync(self): return self.datadict.commit() # instead of #sync
-    def __getitem__(self, k1): return self.datadict[str(k1)]

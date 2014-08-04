@@ -9,4 +9,3 @@ class ModelCacheStoreMemory(ModelCacheStore):
         self.datadict = {}
 
     def sync(self): return True
-    def __getitem__(self, k1): return self.datadict.get(k1, None)

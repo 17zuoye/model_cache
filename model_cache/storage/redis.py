@@ -13,4 +13,3 @@ class ModelCacheStoreRedis(ModelCacheStore):
         self.datadict = RedisDict(key=name)
 
     def sync(self): return True
-    def __getitem__(self, k1): return self.datadict.get(k1)

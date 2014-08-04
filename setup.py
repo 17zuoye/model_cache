@@ -17,6 +17,7 @@ setup(
         'redis_collections',
         'sqlitedict',
         'etl_utils',
+        'forwardable.py == 0.0.11',
     ],
     classifiers=[
         'Intended Audience :: Developers',
