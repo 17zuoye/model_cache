@@ -9,5 +9,5 @@ class ModelCacheStoreSqlite(ModelCacheStore):
         from sqlitedict import SqliteDict
         self.datadict = SqliteDict(name)
 
-    def sync(self): return self.datadict.sync()
+    def sync(self): return self.datadict.commit() # instead of #sync
     def __getitem__(self, k1): return self.datadict[str(k1)]

@@ -67,7 +67,7 @@ class ModelCacheClass(object):
         # items 必定是list, 经过cPickle反序列化回来的
         """ 也许reopen在build_indexes解决sqlite close等问题 """
         cls.datadict.build_indexes(items)
-        cls.datadict.commit() # instead of cls.datadict.sync()
+        cls.datadict.sync()
 
     @classmethod
     def remove(cls, object_id):
