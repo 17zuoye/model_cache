@@ -31,7 +31,7 @@ def generate_test_model_cache(data):
 
         def init__load_data(self, record):
             Foobar.inc += 1
-            self.item_id = Foobar.inc
+            self.item_id = str(Foobar.inc)
             self.item_content = unicode(self.item_id)
     return Foobar
 
@@ -52,9 +52,9 @@ class TestModelCache(unittest.TestCase):
 
         Foobar.feed_data([f1, f2, f3])
         self.assertEqual(len(Foobar), 3)
-        self.assertEqual(Foobar[3], f3)
+        self.assertEqual(Foobar['3'], f3)
 
-        Foobar.remove(1)
+        del Foobar['1']
         self.assertEqual(len(Foobar), 2)
 
     def test_load_from(self):
@@ -68,6 +68,8 @@ class TestModelCache(unittest.TestCase):
 
         Foobar.pull_data()
         self.assertEqual(len(Foobar), total)
+        print repr(Foobar)
+        #import pdb; pdb.set_trace()
 
     def test_included_class(self):
         Foobar = generate_test_model_cache({})

@@ -19,7 +19,7 @@ class ModelCacheClass(object):
         self.init__load_data(record)
 
         assert self.item_id, "self.item_id should be assign in self.load_data function!"
-        assert type(self.item_content) in [str, unicode], \
+        assert isinstance(self.item_content, unicode), \
                 "self.item_content should be assign in self.load_data function!"
 
         self.init__after(record)
@@ -35,13 +35,16 @@ class ModelCacheClass(object):
 
     def init__after(self, record): pass
 
+    def __repr__(self):
+        item_content = self.item_content[0:10]
+        if len(self.item_content) > 10: item_content += u"..."
+        s1 = u"<item_id:%s item_content:\"%s\">" % (unicode(self.item_id), \
+                                                    item_content, )
+        return s1.encode("UTF-8")
+
     def dump_record(self, record):
         return json.dumps(record)
 
-
-    def has_item_id(self, record):
-        """ Detect if there is an item_id, which should be already wrote to database """
-        raise NotImplemented
 
     @classmethod
     def connect(cls): cls.reconnect(is_reconnect=False)
@@ -63,18 +66,8 @@ class ModelCacheClass(object):
         print "[ModelCache] %s at %s" % (msg, dbpath or '[memory]')
 
     @classmethod
-    def remove(cls, object_id):
-        object_id = str(object_id)
-        if cls.datadict.has_key(object_id):
-            del cls.datadict[object_id]
-
-    @classmethod
-    def filter_deleted(cls, record):
-        return False
-
-    @classmethod
     def pull_data(cls):
-        print; print "LOAD %s INTO %s" % (cls.original.model.__module__, cls.__module__)
+        print; print "[LOAD] %s [INTO] %s" % (cls.original.model.__module__, cls.__module__)
 
         if len(cls) / float(cls.original.model.count()) < cls.original.percentage:
             print "[load ids cache] ..."
@@ -99,4 +92,3 @@ class ModelCacheClass(object):
         """ 也许reopen在build_indexes解决sqlite close等问题 """
         cls.datadict.feed_data(items)
         cls.datadict.sync()
-

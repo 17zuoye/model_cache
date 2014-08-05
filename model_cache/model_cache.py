@@ -52,6 +52,17 @@ class ModelCache():
                                                     'keys', 'values', \
                                                     'items', 'iteritems', 'iterkeys', 'itervalues', ))
 
+                    def __repr__(self):
+                        first_five_items = []
+                        for item_id1, item1 in self.iteritems():
+                            first_five_items.append(item1)
+                            if len(first_five_items) == 5: break
+                        dots = ", ......" if len(first_five_items) > 4 else ""
+                        return "<%s has %i items:[%s%s]>" % \
+                                        (self.__name__, len(self), \
+                                        ", ".join([repr(item1) for item1 in first_five_items]), \
+                                        dots, )
+
 
                 __metaclass__ = MetaClass
 
