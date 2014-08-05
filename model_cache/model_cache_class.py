@@ -54,7 +54,7 @@ class ModelCacheClass(object):
         dbpath = None
         if cls.original.cache_dir:
             dbpath = os.path.join(cls.original.cache_dir, \
-                    repr(cls).split("'")[1].split(".")[-1] + ".db")
+                    cls.__name__ + ".db")
 
         cls.datadict = {
             "memory" : ModelCacheStoreMemory,
