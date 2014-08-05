@@ -52,8 +52,8 @@ class ModelCacheClass(object):
     @classmethod
     def reconnect(cls, is_reconnect=True):
         dbpath = None
-        if cls.original.cache_dir:
-            dbpath = os.path.join(cls.original.cache_dir, \
+        if cls.cache_dir:
+            dbpath = os.path.join(cls.cache_dir, \
                     cls.__name__ + ".db")
 
         cls.datadict = {

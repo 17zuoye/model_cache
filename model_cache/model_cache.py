@@ -30,6 +30,9 @@ class ModelCache():
         if (default_kwargs['cache_dir'] is None) and (default_kwargs['storage_type'] != "memory"):
             raise Exception(u"`cache_dir` should not be None when storage_type is not memory.")
 
+        cache_dir = default_kwargs['cache_dir']
+        del default_kwargs['cache_dir']
+
         # decorate class
         def _model_cache_decorator(decorated_class):
             # 1. included_class should not overwrite ModelCacheClass's important methods,
@@ -69,6 +72,7 @@ class ModelCache():
             _model_cache.__name__   = decorated_class.__name__
             _model_cache.__module__ = decorated_class.__module__ # so can pickle :)
 
+            _model_cache.cache_dir  = cache_dir
             _model_cache.connect()
 
             return _model_cache
