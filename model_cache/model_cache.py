@@ -56,21 +56,24 @@ class ModelCache():
                                                     'items', 'iteritems', 'iterkeys', 'itervalues', ))
 
                     def __repr__(self):
-                        first_five_items = []
-                        for item_id1, item1 in self.iteritems():
-                            first_five_items.append(item1)
-                            if len(first_five_items) == 5: break
-                        dots = ", ......" if len(first_five_items) > 4 else ""
-                        return "<%s has %i items:[%s%s]>" % \
+                        while len(self.first_five_items) < 5:
+                            for item_id1, item1 in self.iteritems():
+                                self.first_five_items.append(item1)
+                                if len(self.first_five_items) == 5: break
+
+                        dots = ", ......" if len(self) > 5 else ""
+                        return (u"<%s has %i items:[%s%s]>" % \
                                         (self.__name__, len(self), \
-                                        ", ".join([repr(item1) for item1 in first_five_items]), \
-                                        dots, )
+                                        ", ".join([str(item1.item_id) for item1 in self.first_five_items]), \
+                                        dots, )).encode("UTF-8")
 
 
                 __metaclass__ = MetaClass
 
             _model_cache.__name__   = decorated_class.__name__
             _model_cache.__module__ = decorated_class.__module__ # so can pickle :)
+
+            _model_cache.first_five_items = []
 
             _model_cache.cache_dir  = cache_dir
             _model_cache.connect()

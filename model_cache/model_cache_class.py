@@ -35,13 +35,6 @@ class ModelCacheClass(object):
 
     def init__after(self, record): pass
 
-    def __repr__(self):
-        item_content = self.item_content[0:10]
-        if len(self.item_content) > 10: item_content += u"..."
-        s1 = u"<item_id:%s item_content:\"%s\">" % (unicode(self.item_id), \
-                                                    item_content, )
-        return s1.encode("UTF-8")
-
     def dump_record(self, record):
         return json.dumps(record)
 
