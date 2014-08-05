@@ -55,7 +55,7 @@ class ModelCache():
 
                 __metaclass__ = MetaClass
 
-            _model_cache.__name__ = decorated_class.__name__
+            _model_cache.__name__   = decorated_class.__name__
             _model_cache.__module__ = decorated_class.__module__ # so can pickle :)
 
             _model_cache.connect()

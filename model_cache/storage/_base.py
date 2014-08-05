@@ -6,7 +6,7 @@ class ModelCacheStore(object):
     def __init__(self, name) : raise NotImplemented
     def sync(self)           : raise NotImplemented
 
-    def build_indexes(self, items):
+    def feed_data(self, items):
         for i1 in items:
             self.datadict[str(i1.item_id)] = i1
         self.sync()

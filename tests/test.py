@@ -50,7 +50,7 @@ class TestModelCache(unittest.TestCase):
         f2 = Foobar()
         f3 = Foobar()
 
-        Foobar.build_indexes([f1, f2, f3])
+        Foobar.feed_data([f1, f2, f3])
         self.assertEqual(len(Foobar), 3)
         self.assertEqual(Foobar[3], f3)
 

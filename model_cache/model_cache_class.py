@@ -63,13 +63,6 @@ class ModelCacheClass(object):
         print "[ModelCache] %s at %s" % (msg, dbpath or '[memory]')
 
     @classmethod
-    def build_indexes(cls, items=[]):
-        # items 必定是list, 经过cPickle反序列化回来的
-        """ 也许reopen在build_indexes解决sqlite close等问题 """
-        cls.datadict.build_indexes(items)
-        cls.datadict.sync()
-
-    @classmethod
     def remove(cls, object_id):
         object_id = str(object_id)
         if cls.datadict.has_key(object_id):
@@ -95,7 +88,15 @@ class ModelCacheClass(object):
                 items.append(cls(e1))
 
                 if len(items) > 10000:
-                    cls.build_indexes(items)
+                    cls.feed_data(items)
                     items = []
-            cls.build_indexes(items)
+            cls.feed_data(items)
             del ids_cache
+
+    @classmethod
+    def feed_data(cls, items=[]):
+        # items 必定是list, 经过cPickle反序列化回来的
+        """ 也许reopen在build_indexes解决sqlite close等问题 """
+        cls.datadict.feed_data(items)
+        cls.datadict.sync()
+
