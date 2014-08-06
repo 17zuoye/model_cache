@@ -3,7 +3,7 @@
 import os
 import json
 from .storage import *
-from etl_utils import process_notifier
+from etl_utils import process_notifier, set_default_value
 
 class ModelCacheClass(object):
 
@@ -62,7 +62,12 @@ class ModelCacheClass(object):
     def pull_data(cls):
         print; print "[LOAD] %s [INTO] %s" % (cls.original.model.__module__, cls.__module__)
 
-        if len(cls) / float(cls.original.model.count()) < cls.original.percentage:
+        original_model_count = set_default_value([ \
+                lambda : cls.original.model.count(), \
+                lambda : len(cls.original.model), \
+                ], u"original.model is invalid!")
+
+        if len(cls) / float(original_model_count) < cls.original.percentage:
             print "[load ids cache] ..."
             ids_cache = {str(i1.item_id) : True for i1 in process_notifier(cls.datadict.datadict)}
 

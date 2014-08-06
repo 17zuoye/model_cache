@@ -7,11 +7,7 @@ sys.path.insert(0, root_dir)
 import unittest
 from model_cache import ModelCache
 
-class OriginalModel(list):
-    def __init__(self, list1):
-        super(OriginalModel, self).__init__(list1)
-
-    def count(self): return len(self)
+class OriginalModel(list): pass
 
 
 class IncludedClass(object):
@@ -61,7 +57,8 @@ class TestModelCache(unittest.TestCase):
         total = 100000
 
         original_model_data = OriginalModel([ \
-                {'id': idx1, 'content': 'content_' + str(idx1)} for idx1 in xrange(total)])
+                {'id': idx1, 'content': 'content_' + str(idx1)} \
+                    for idx1 in xrange(total)])
         setattr(original_model_data, '__module__', 'original_model')
 
         Foobar = generate_test_model_cache(original_model_data)
