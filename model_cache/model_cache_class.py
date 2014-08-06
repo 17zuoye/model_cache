@@ -69,7 +69,8 @@ class ModelCacheClass(object):
 
         if len(cls) / float(original_model_count) < cls.original.percentage:
             print "[load ids cache] ..."
-            ids_cache = {str(i1.item_id) : True for i1 in process_notifier(cls.datadict.datadict)}
+            cls.datadict.sync() # sync first
+            ids_cache = {i1.item_id : True for i1 in process_notifier(cls.datadict.datadict)}
 
             items = []
             for e1 in process_notifier(cls.original.model):
@@ -88,5 +89,7 @@ class ModelCacheClass(object):
     def feed_data(cls, items=[]):
         # items 必定是list, 经过cPickle反序列化回来的
         """ 也许reopen在build_indexes解决sqlite close等问题 """
-        cls.datadict.feed_data(items)
+        for i1 in items:
+            cls.datadict[i1.item_id] = i1
+
         cls.datadict.sync()

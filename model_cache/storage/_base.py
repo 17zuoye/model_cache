@@ -8,11 +8,6 @@ class ModelCacheStore(object):
     def __init__(self, name) : raise NotImplemented
     def sync(self)           : raise NotImplemented
 
-    def feed_data(self, items):
-        for i1 in items:
-            self.datadict[str(i1.item_id)] = i1
-
-
     __metaclass__ = Forwardable
     _ = def_delegators('datadict', ('__getitem__', '__setitem__', '__delitem__', \
                                     '__iter__', '__len__', '__contains__', \
