@@ -65,7 +65,7 @@ class ModelCache():
                         dots = ", ......" if is_total_len_enough else ""
                         return (u"<%s has %i items:[%s%s]>" % \
                                         (self.__name__, len(self), \
-                                        ", ".join([item1.item_id for item1 in self.first_five_items]), \
+                                        ", ".join([str(item1.item_id) for item1 in self.first_five_items]), \
                                         dots, )).encode("UTF-8")
                 __metaclass__ = MetaClass
 
