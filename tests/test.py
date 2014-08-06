@@ -63,6 +63,7 @@ class TestModelCache(unittest.TestCase):
 
         Foobar = generate_test_model_cache(original_model_data)
 
+        repr(Foobar) # when 0 items
         Foobar.pull_data()
         self.assertEqual(len(Foobar), total)
         print repr(Foobar)
