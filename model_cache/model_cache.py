@@ -66,9 +66,11 @@ class ModelCache():
                                         (self.__name__, len(self), \
                                         ", ".join([str(item1.item_id) for item1 in self.first_five_items]), \
                                         dots, )).encode("UTF-8")
-
-
                 __metaclass__ = MetaClass
+
+                @classmethod
+                def pickle_path(cls, name):
+                    return cls.cache_dir + "/" + name + ".cPickle"
 
             _model_cache.__name__   = decorated_class.__name__
             _model_cache.__module__ = decorated_class.__module__ # so can pickle :)
