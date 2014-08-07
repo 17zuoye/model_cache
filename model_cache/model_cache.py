@@ -81,6 +81,10 @@ class ModelCache():
             _model_cache.cache_dir  = os.path.join(cache_dir or u"", _model_cache.__name__)
             if default_kwargs['storage_type'] != 'memory':
                 if not os.path.isdir(_model_cache.cache_dir): os.makedirs(_model_cache.cache_dir)
+            _model_cache.dbpath = None
+            if _model_cache.cache_dir:
+                _model_cache.dbpath = os.path.join(_model_cache.cache_dir, _model_cache.__name__ + ".db")
+
             _model_cache.connect()
 
             return _model_cache

@@ -44,19 +44,14 @@ class ModelCacheClass(object):
 
     @classmethod
     def reconnect(cls, is_reconnect=True):
-        dbpath = None
-        if cls.cache_dir:
-            dbpath = os.path.join(cls.cache_dir, \
-                    cls.__name__ + ".db")
-
         cls.datadict = {
             "memory" : ModelCacheStoreMemory,
             "sqlite" : ModelCacheStoreSqlite,
             "redis"  : ModelCacheStoreRedis,
-        }[cls.original.storage_type](dbpath)
+        }[cls.original.storage_type](cls.dbpath)
 
         msg = 'Reconnect' if is_reconnect else 'Init'
-        print "[ModelCache] %s at %s" % (msg, dbpath or '[memory]')
+        print "[ModelCache] %s at %s" % (msg, cls.dbpath or '[memory]')
 
     @classmethod
     def pull_data(cls):
