@@ -14,7 +14,7 @@ class ModelCache():
 
         # setup args
         default_kwargs = {
-                    'cache_dir'      : None,
+                    'cache_dir'      : os.getenv("ModelCacheDir"),
                     'storage_type'   : 'sqlite',
                     'percentage'     : 0.9999,
                     'filter_lambda'  : lambda item1: False,
@@ -78,7 +78,7 @@ class ModelCache():
 
             _model_cache.first_five_items = []
 
-            _model_cache.cache_dir  = cache_dir
+            _model_cache.cache_dir  = os.path.join(cache_dir or u"", _model_cache.__name__)
             _model_cache.connect()
 
             return _model_cache
