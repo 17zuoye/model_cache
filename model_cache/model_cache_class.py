@@ -65,7 +65,7 @@ class ModelCacheClass(object):
         if len(cls) / float(original_model_count) < cls.original.percentage:
             print "[load ids cache] ..."
             cls.datadict.sync() # sync first
-            ids_cache = {i1.item_id : True for i1 in process_notifier(cls.datadict.datadict)}
+            ids_cache = {item_id1 : True for item_id1, item1 in process_notifier(cls.datadict.datadict)}
 
             items = []
             for e1 in process_notifier(cls.original.model):
