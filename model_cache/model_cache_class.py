@@ -85,6 +85,9 @@ class ModelCacheClass(object):
         # items 必定是list, 经过cPickle反序列化回来的
         """ 也许reopen在build_indexes解决sqlite close等问题 """
         for i1 in items:
+            # Fix InterfaceError: Error binding parameter 0 - probably unsupported type
+            assert isinstance(i1.item_id, (str, unicode, int,))
+
             cls.datadict[i1.item_id] = i1
 
         cls.datadict.sync()
