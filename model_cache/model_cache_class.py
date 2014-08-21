@@ -1,9 +1,7 @@
 # -*- coding: utf-8 -*-
 
-import os
 import json
 from .storage import *
-from etl_utils import process_notifier, set_default_value
 
 class ModelCacheClass(object):
 

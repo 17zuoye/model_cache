@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-from forwardable import Forwardable, def_delegators
-
-from .model_cache_class import *
+import os
+from .storage import *
+from .model_cache_class import ModelCacheClass
 
 valid_storage_types = ("memory", "sqlite", "redis")
 
@@ -49,11 +49,7 @@ class ModelCache():
                 # Thx http://stackoverflow.com/questions/4932438/how-to-create-a-custom-string-representation-for-a-class-object/4932473#4932473
                 class MetaClass(type):
                     __metaclass__ = Forwardable
-                    _ = def_delegators('datadict', ('__getitem__', '__setitem__', '__delitem__', \
-                                                    '__iter__', '__len__', '__contains__', \
-                                                    'has_key', 'get', 'pop', 'popitem', \
-                                                    'keys', 'values', \
-                                                    'items', 'iteritems', 'iterkeys', 'itervalues', ))
+                    _ = def_delegators('datadict', dict_attrs)
 
                     def __repr__(self):
                         is_total_len_enough = len(self) > 5
