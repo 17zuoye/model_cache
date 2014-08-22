@@ -38,6 +38,11 @@ class ModelCache():
             # 1. included_class should not overwrite ModelCacheClass's important methods,
             #    include `__init__`, `init__before`, `init__after`.
             # 2. ensure decorated_class's methods will overwrite ModelCache's.
+
+            for k1 in ['init__before', 'init__after']:
+                if k1 in dir(default_kwargs['included_class']):
+                    setattr(ModelCacheClass, k1, getattr(default_kwargs['included_class'], k1))
+
             class _model_cache(decorated_class, ModelCacheClass, default_kwargs['included_class']):
                 class OriginalClass(): pass # so we can setattr here.
                 original = OriginalClass()

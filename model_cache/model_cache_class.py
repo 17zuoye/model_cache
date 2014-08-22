@@ -84,7 +84,7 @@ class ModelCacheClass(object):
         """ 也许reopen在build_indexes解决sqlite close等问题 """
         for i1 in items:
             # Fix InterfaceError: Error binding parameter 0 - probably unsupported type
-            assert isinstance(i1.item_id, (str, unicode, int,))
+            assert isinstance(i1.item_id, (str, unicode, int,)), ("not " + repr(i1.item_id))
 
             cls.datadict[i1.item_id] = i1
 

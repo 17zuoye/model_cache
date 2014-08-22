@@ -13,6 +13,9 @@ class OriginalModel(list): pass
 class IncludedClass(object):
     def im_include(self): return 1
 
+    def init__after(self, record):
+        self.overwrite_init__after = True
+
 
 def generate_test_model_cache(data):
     attrs = {
@@ -72,5 +75,6 @@ class TestModelCache(unittest.TestCase):
     def test_included_class(self):
         Foobar = generate_test_model_cache({})
         self.assertEqual(Foobar().im_include(), 1)
+        self.assertTrue('overwrite_init__after' in dir(Foobar()))
 
 if __name__ == '__main__': unittest.main()
