@@ -18,7 +18,8 @@ class ModelCacheClass(object):
 
         assert self.item_id, "self.item_id should be assigned in self.load_data function!"
         assert isinstance(self.item_content, unicode), \
-                "self.item_content should be assigned as unicode in self.load_data function!"
+                ("self.item_content should be assigned as unicode in self.load_data function! %s" \
+                    % repr(self.item_content))
 
         self.init__after(record)
 
