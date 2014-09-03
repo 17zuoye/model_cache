@@ -74,7 +74,7 @@ class ParallelShelve(object):
             while (from_idx < to_idx):
                 def load_items_func():
                     # NOTE 不知道这里 model_cache[item_id1] 随机读写效率如何，虽然 item_ids 其实是磁盘顺序的
-                    return [self.item_func(self.model_cache[item_id1]) \
+                    return [[item_id1, self.item_func(self.model_cache[item_id1]),] \
                                 for item_id1 in process_notifier(item_ids[from_idx:(from_idx+self.chunk_size)])]
                 filename = self.cache_filename + u'.' + unicode(from_idx)
                 if not os.path.exists(filename): cpickle_cache(filename, load_items_func)
@@ -99,8 +99,8 @@ class ParallelShelve(object):
 
         self.result = self.connnection()
         def write(tmp_items):
-            for item1 in process_notifier(tmp_items):
-                self.result[item1.item_id] = item1
+            for item_id, item1 in process_notifier(tmp_items):
+                self.result[item_id] = item1
             self.result.sync()
             return []
 
