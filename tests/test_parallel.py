@@ -10,7 +10,7 @@ from tests.setup import *
 from model_cache.tools.parallel import ParallelShelve
 
 dbpath = "tests/parallel.db"
-total = 3000
+total = 12000
 original_model_data = OriginalModel.fake(total)
 setattr(original_model_data, '__module__', 'original_model')
 Foobar = generate_test_model_cache(original_model_data)

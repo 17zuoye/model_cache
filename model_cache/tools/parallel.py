@@ -19,6 +19,7 @@ class ParallelShelve(object):
 
     @classmethod
     def process(cls, model_cache, cache_filename, item_func, **attrs):
+        # multiple process can't share the same file instance which forked from the same parent process
         if model_cache.original.storage_type != 'memory': model_cache.reconnect()
 
         attrs['model_cache']    = model_cache
@@ -47,7 +48,10 @@ class ParallelShelve(object):
 
         self.process_count = self.process_count or (multiprocessing.cpu_count()-2)
         self.scope_count   = len(self.model_cache)
-        self.scope_limit   = (self.scope_count / self.process_count) + 1
+
+        fix_offset = lambda num : ( num / self.chunk_size + 1 ) * self.chunk_size
+        fixed_scope_count  = fix_offset(self.scope_count)
+        self.scope_limit   = fix_offset(fixed_scope_count / self.process_count)
 
         assert 'datadict' in dir(self.model_cache), u"model_cache should be a ModelCache"
 
@@ -64,20 +68,18 @@ class ParallelShelve(object):
         item_ids = self.model_cache.keys()
 
         def process__load_items_func(item_ids, from_idx, to_idx):
-            new_idx = from_idx / self.chunk_size * self.chunk_size
-            if new_idx < from_idx: new_idx += self.chunk_size # 不要替代前一个去执行
-            while (new_idx < to_idx):
+            while (from_idx < to_idx):
                 def load_items_func():
                     items = []
-                    for item_id1 in item_ids[new_idx:(new_idx+self.chunk_size)]:
+                    for item_id1 in item_ids[from_idx:(from_idx+self.chunk_size)]:
                         # NOTE 不知道这里 model_cache[item_id1] 随机读写效率如何，虽然 item_ids 其实是磁盘顺序的
                         f1 = self.item_func(self.model_cache[item_id1])
                         if not f1.item_content: continue # 过滤内容长度为0的item
                         items.append(f1)
                     return items
-                filename = self.cache_filename + u'.' + unicode(new_idx)
+                filename = self.cache_filename + u'.' + unicode(from_idx)
                 if not os.path.exists(filename): cpickle_cache(filename, load_items_func)
-                new_idx += self.chunk_size
+                from_idx += self.chunk_size
 
         # 检查所有items是否都存在
         if len(items_cPickles()) < math.ceil(self.scope_count / float(self.chunk_size)):
@@ -100,12 +102,14 @@ class ParallelShelve(object):
             for item1 in process_notifier(tmp_items):
                 self.result[item1.item_id] = item1
             self.result.sync()
-            tmp_items = []
+            return []
 
+        print "\n"*5, "begin merge ..."
         tmp_items = []
         for pickle_filename in items_cPickles():
             chunk = cpickle_cache(pickle_filename, lambda: True)
             tmp_items.extend(chunk)
             if len(tmp_items) >= self.merge_size:
-                write(tmp_items)
-            write(tmp_items)
+                tmp_items = write(tmp_items)
+            tmp_items = write(tmp_items)
+        #import pdb; pdb.set_trace()
