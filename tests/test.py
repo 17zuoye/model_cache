@@ -5,39 +5,9 @@ root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, root_dir)
 
 import unittest
-from model_cache import ModelCache
+from tests.setup import *
 
-class OriginalModel(list): pass
-
-
-class IncludedClass(object):
-    def im_include(self): return 1
-
-    def init__after(self, record):
-        self.overwrite_init__after = True
-
-
-def generate_test_model_cache(data):
-    attrs = {
-              'read_id_lambda' : lambda item1: item1['id'],
-              'storage_type'   : 'memory',
-              'included_class' : IncludedClass,
-             }
-
-    @ModelCache.connect(data, **attrs)
-    class Foobar():
-        inc = 0
-
-        def init__load_data(self, record):
-            Foobar.inc += 1
-            self.item_id = str(Foobar.inc)
-            self.item_content = unicode(self.item_id)
-    return Foobar
-
-
-
-
-class TestModelCache(unittest.TestCase):
+class TestTools(unittest.TestCase):
 
     def test_import(self):
         Foobar = generate_test_model_cache({})
@@ -58,12 +28,8 @@ class TestModelCache(unittest.TestCase):
 
     def test_load_from(self):
         total = 100000
-
-        original_model_data = OriginalModel([ \
-                {'id': idx1, 'content': 'content_' + str(idx1)} \
-                    for idx1 in xrange(total)])
+        original_model_data = OriginalModel.fake(total)
         setattr(original_model_data, '__module__', 'original_model')
-
         Foobar = generate_test_model_cache(original_model_data)
 
         repr(Foobar) # when 0 items
