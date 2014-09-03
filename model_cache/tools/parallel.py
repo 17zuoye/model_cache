@@ -19,9 +19,6 @@ class ParallelShelve(object):
 
     @classmethod
     def process(cls, model_cache, cache_filename, item_func, **attrs):
-        # multiple process can't share the same file instance which forked from the same parent process
-        if model_cache.original.storage_type != 'memory': model_cache.reconnect()
-
         attrs['model_cache']    = model_cache
         attrs['cache_filename'] = cache_filename
         attrs['item_func']      = item_func
@@ -68,15 +65,14 @@ class ParallelShelve(object):
         item_ids = self.model_cache.keys()
 
         def process__load_items_func(item_ids, from_idx, to_idx):
+            # multiple process can't share the same file instance which forked from the same parent process
+            if self.model_cache.original.storage_type != 'memory': self.model_cache.reconnect()
+
             while (from_idx < to_idx):
                 def load_items_func():
-                    items = []
-                    for item_id1 in item_ids[from_idx:(from_idx+self.chunk_size)]:
-                        # NOTE 不知道这里 model_cache[item_id1] 随机读写效率如何，虽然 item_ids 其实是磁盘顺序的
-                        f1 = self.item_func(self.model_cache[item_id1])
-                        if not f1.item_content: continue # 过滤内容长度为0的item
-                        items.append(f1)
-                    return items
+                    # NOTE 不知道这里 model_cache[item_id1] 随机读写效率如何，虽然 item_ids 其实是磁盘顺序的
+                    return [self.item_func(self.model_cache[item_id1]) \
+                                for item_id1 in process_notifier(item_ids[from_idx:(from_idx+self.chunk_size)])]
                 filename = self.cache_filename + u'.' + unicode(from_idx)
                 if not os.path.exists(filename): cpickle_cache(filename, load_items_func)
                 from_idx += self.chunk_size
@@ -112,4 +108,3 @@ class ParallelShelve(object):
             if len(tmp_items) >= self.merge_size:
                 tmp_items = write(tmp_items)
             tmp_items = write(tmp_items)
-        #import pdb; pdb.set_trace()
