@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-import os, sys
+import os, sys, time
 root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, root_dir)
 
@@ -26,7 +26,8 @@ class TestTools(unittest.TestCase):
         repr(Foobar) # preload first_five_items
         random_item_id = Foobar.first_five_items[0].item_id
 
-        result = ParallelShelve.process(Foobar, dbpath, lambda item1: item1)
+        def process(item1): time.sleep(0.005); return item1
+        result = ParallelShelve.process(Foobar, dbpath, process)
 
         self.assertEqual(len(result), len(Foobar))
         self.assertEqual(result[random_item_id].item_content, Foobar[random_item_id].item_content)

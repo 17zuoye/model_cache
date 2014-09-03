@@ -92,10 +92,9 @@ class ParallelShelve(object):
                                         args=tuple((item_ids, from_idx, to_idx,))).start()
 
         # Check if extract from original is finished.
-        sleep_count = 0
-        while multiprocessing.active_children():
-            time.sleep(sleep_count % 5)
-            sleep_count += 1
+
+        sleep_sec = lambda : len(multiprocessing.active_children())
+        while sleep_sec() > 0: time.sleep(sleep_sec())
 
         self.result = self.connnection()
         def write(tmp_items):
