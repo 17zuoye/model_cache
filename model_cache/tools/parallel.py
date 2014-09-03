@@ -52,7 +52,10 @@ class ParallelShelve(object):
 
         assert 'datadict' in dir(self.model_cache), u"model_cache should be a ModelCache"
 
-        self.result = shelve.open(self.cache_filename, writeback=False)
+        self.result = self.connnection()
+        if len(self.result) == 0: os.system("rm -f %s" % self.cache_filename)
+
+    def connnection(self): return shelve.open(self.cache_filename, writeback=False)
 
     def recache(self):
         items_cPickles = lambda : sorted( \
@@ -94,6 +97,7 @@ class ParallelShelve(object):
             time.sleep(sleep_count % 5)
             sleep_count += 1
 
+        self.result = self.connnection()
         def write(tmp_items):
             for item1 in process_notifier(tmp_items):
                 self.result[item1.item_id] = item1
