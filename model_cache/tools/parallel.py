@@ -93,7 +93,7 @@ class ParallelData(object):
         for k1 in first_params: setattr(self, k1, params[k1])
         for k1 in second_params:
             default_v1 = second_params.get(k1, False)
-            setattr(self, k1, getattr(second_params, k1, default_v1))
+            setattr(self, k1, params.get(k1, default_v1))
 
         if isinstance(self.cache_filename, str): self.cache_filename = unicode(self.cache_filename, "UTF-8")
         assert isinstance(self.cache_filename, unicode)
@@ -149,7 +149,7 @@ class ParallelData(object):
         if not self.output_lambda: self.result = self.connnection()
         def write(tmp_items):
             if self.output_lambda:
-                self.output_lambda(tmp_items)
+                self.output_lambda([i1[1] for i1 in tmp_items])
             else:
                 for item_id, item1 in process_notifier(tmp_items):
                     self.result[item_id] = item1
