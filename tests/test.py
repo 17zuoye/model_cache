@@ -7,7 +7,7 @@ sys.path.insert(0, root_dir)
 import unittest
 from tests.setup import *
 
-class TestTools(unittest.TestCase):
+class TestModelCache(unittest.TestCase):
 
     def test_import(self):
         Foobar = generate_test_model_cache({})
@@ -36,7 +36,6 @@ class TestTools(unittest.TestCase):
         Foobar.pull_data()
         self.assertEqual(len(Foobar), total)
         print repr(Foobar)
-        #import pdb; pdb.set_trace()
 
     def test_included_class(self):
         Foobar = generate_test_model_cache({})

@@ -21,8 +21,10 @@ class DataSource(object):
 
 class ModelCacheDataSource(DataSource):
 
+    def post_hook(self):
+        assert 'datadict' in dir(self.datasource), u"datasource should be a ModelCache"
+
     def __len__(self): return len(self.datasource)
-    #assert 'datadict' in dir(self.datasource), u"datasource should be a ModelCache"
 
     def scope_range(self, from_idx, to_idx):
         # NOTE 不知道这里 datasource[item_id1] 随机读写效率如何，虽然 item_ids 其实是磁盘顺序的
@@ -43,7 +45,9 @@ class ModelCacheDataSource(DataSource):
         return self.datasource.keys()
 
 class MongodbDataSource(DataSource):
-# TODO dynamic add find({})
+    def post_hook(self):
+        if 'collection' not in dir(self.datasource):
+            self.datasource = self.datasource.find({})
 
     def __len__(self): return self.datasource.count()
 

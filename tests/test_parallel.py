@@ -26,11 +26,10 @@ class TestTools(unittest.TestCase):
         repr(Foobar) # preload first_five_items
         random_item_id = Foobar.first_five_items[0].item_id
 
-        def process(item1): time.sleep(0.005); return item1
+        def process(item1): time.sleep(0.002); return item1
         result = ParallelShelve.process(Foobar, 'model_cache', dbpath, process)
 
         self.assertEqual(len(result), len(Foobar))
         self.assertEqual(result[random_item_id].item_content, Foobar[random_item_id].item_content)
-        #import pdb; pdb.set_trace()
 
 if __name__ == '__main__': unittest.main()
