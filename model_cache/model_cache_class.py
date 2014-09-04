@@ -43,11 +43,7 @@ class ModelCacheClass(object):
 
     @classmethod
     def reconnect(cls, is_reconnect=True):
-        cls.datadict = {
-            "memory" : ModelCacheStoreMemory,
-            "sqlite" : ModelCacheStoreSqlite,
-            "redis"  : ModelCacheStoreRedis,
-        }[cls.original.storage_type](cls.dbpath)
+        cls.datadict = valid_storages[cls.original.storage_type](cls.dbpath)
 
         msg = 'Reconnect' if is_reconnect else 'Init'
         print "[ModelCache] %s at %s" % (msg, cls.dbpath or '[memory]')
