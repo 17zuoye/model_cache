@@ -27,7 +27,7 @@ class TestTools(unittest.TestCase):
         random_item_id = Foobar.first_five_items[0].item_id
 
         def process(item1): time.sleep(0.005); return item1
-        result = ParallelShelve.process(Foobar, dbpath, process)
+        result = ParallelShelve.process(Foobar, 'model_cache', dbpath, process)
 
         self.assertEqual(len(result), len(Foobar))
         self.assertEqual(result[random_item_id].item_content, Foobar[random_item_id].item_content)

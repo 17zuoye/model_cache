@@ -3,10 +3,55 @@
 import os, glob, time, math
 import multiprocessing
 import shelve
-from etl_utils import process_notifier, cpickle_cache
+from etl_utils import process_notifier, cpickle_cache, cached_property
 from termcolor import cprint
 
 def pn(msg): cprint(msg, 'blue')
+
+class DataSource(object):
+    def __init__(self, datasource):
+        self.datasource = datasource
+        self.post_hook()
+
+    def post_hook(self): pass
+    def __len__(self): raise NotImplemented
+    def scope_range(self, from_idx, to_idx): raise NotImplemented
+    def convert_iter_to_item(self, iter1): raise NotImplemented
+    def convert_iter_to_item_id(self, iter1): raise NotImplemented
+
+class ModelCacheDataSource(DataSource):
+
+    def __len__(self): return len(self.datasource)
+    #assert 'datadict' in dir(self.datasource), u"datasource should be a ModelCache"
+
+    def scope_range(self, from_idx, to_idx):
+        # NOTE 不知道这里 datasource[item_id1] 随机读写效率如何，虽然 item_ids 其实是磁盘顺序的
+        # 实际跑数据结果表示还是比Sqlite顺序读还快。这里dbm是17K/s, sqlite是14K/s，仅供参考。
+        return self.item_ids[from_idx:to_idx]
+
+    def convert_iter_to_item(self, iter1):    return self.datasource[iter1]
+    def convert_iter_to_item_id(self, iter1): return iter1
+
+    @cached_property
+    def item_ids(self):
+        # TODO 也许可以优化为iter，但是不取出来无法对键进行分割
+        # 现在的问题是keys浪费内存，特别是百千万级别时
+
+        # multiple process can't share the same file instance which forked from the same parent process
+        if self.datasource.original.storage_type != 'memory': self.datasource.reconnect()
+
+        return self.datasource.keys()
+
+class MongodbDataSource(DataSource):
+# TODO dynamic add find({})
+
+    def __len__(self): return self.datasource.count()
+
+    def scope_range(self, from_idx, to_idx):
+        return self.datasource.skip(from_idx).limit(to_idx-from_idx)
+
+    def convert_iter_to_item(self, iter1):    return iter1
+    def convert_iter_to_item_id(self, iter1): return unicode(iter1.get('_id', u""))
 
 class ParallelShelve(object):
     """
@@ -18,18 +63,22 @@ class ParallelShelve(object):
     """
 
     @classmethod
-    def process(cls, model_cache, cache_filename, item_func, **attrs):
-        attrs['model_cache']    = model_cache
+    def process(cls, datasource, datasource_type, cache_filename, item_func, **attrs):
+        attrs['datasource']     = {
+                "mongodb" : MongodbDataSource,
+                "model_cache" : ModelCacheDataSource
+            }[datasource_type](datasource)
+
         attrs['cache_filename'] = cache_filename
         attrs['item_func']      = item_func
 
         ps = ParallelShelve(attrs)
-        if (len(ps.model_cache) - len(ps.result)) > ps.offset: ps.recache()
+        if (len(ps.datasource) - len(ps.result)) > ps.offset: ps.recache()
 
         return ps.result
 
     def __init__(self, params):
-        first_params = "model_cache cache_filename item_func".split(" ")
+        first_params = "datasource cache_filename item_func".split(" ")
         second_params = {"process_count" : None,
                          "chunk_size"    : 1000,
                          "merge_size"    : 10000,
@@ -44,13 +93,11 @@ class ParallelShelve(object):
         assert isinstance(self.cache_filename, unicode)
 
         self.process_count = self.process_count or (multiprocessing.cpu_count()-2)
-        self.scope_count   = len(self.model_cache)
+        self.scope_count   = len(self.datasource)
 
         fix_offset = lambda num : ( num / self.chunk_size + 1 ) * self.chunk_size
         fixed_scope_count  = fix_offset(self.scope_count)
         self.scope_limit   = fix_offset(fixed_scope_count / self.process_count)
-
-        assert 'datadict' in dir(self.model_cache), u"model_cache should be a ModelCache"
 
         self.result = self.connnection()
         if len(self.result) == 0: os.system("rm -f %s" % self.cache_filename)
@@ -63,19 +110,16 @@ class ParallelShelve(object):
                             key=lambda f1: int(f1.split("/")[-1].split(".")[-1]) # sort by chunk steps
                         )
 
-        # TODO 也许可以优化为iter，但是不取出来无法对键进行分割
-        # 现在的问题是keys浪费内存，特别是百千万级别时
-        item_ids = self.model_cache.keys()
-
-        def process__load_items_func(item_ids, from_idx, to_idx):
-            # multiple process can't share the same file instance which forked from the same parent process
-            if self.model_cache.original.storage_type != 'memory': self.model_cache.reconnect()
+        def process__load_items_func(from_idx, to_idx):
 
             while (from_idx < to_idx):
                 def load_items_func():
-                    # NOTE 不知道这里 model_cache[item_id1] 随机读写效率如何，虽然 item_ids 其实是磁盘顺序的
-                    return [[item_id1, self.item_func(self.model_cache[item_id1]),] \
-                                for item_id1 in process_notifier(item_ids[from_idx:(from_idx+self.chunk_size)])]
+                    return [ \
+                            [ \
+                                self.datasource.convert_iter_to_item_id(iter1), \
+                                self.item_func(self.datasource.convert_iter_to_item(iter1)), \
+                            ] \
+                                for iter1 in process_notifier(self.datasource.scope_range(from_idx, from_idx+self.chunk_size))]
                 filename = self.cache_filename + u'.' + unicode(from_idx)
                 if not os.path.exists(filename): cpickle_cache(filename, load_items_func)
                 from_idx += self.chunk_size
@@ -89,10 +133,9 @@ class ParallelShelve(object):
                 if to_idx > self.scope_count: to_idx = self.scope_count
                 pn("[multiprocessing] range %i - %i " % (from_idx, to_idx))
                 multiprocessing.Process(target=process__load_items_func, \
-                                        args=tuple((item_ids, from_idx, to_idx,))).start()
+                                        args=tuple((from_idx, to_idx,))).start()
 
         # Check if extract from original is finished.
-
         sleep_sec = lambda : len(multiprocessing.active_children())
         while sleep_sec() > 0: time.sleep(sleep_sec())
 
