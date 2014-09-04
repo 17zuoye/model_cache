@@ -57,13 +57,13 @@ class MongodbDataSource(DataSource):
     def convert_iter_to_item(self, iter1):    return iter1
     def convert_iter_to_item_id(self, iter1): return unicode(iter1.get('_id', u""))
 
-class ParallelShelve(object):
+class ParallelData(object):
     """
-    Input:    ModelCache
+    Input:    DataSource
 
     => multiprocessing <=
 
-    Output:   shelve
+    Output:   shelve, model_cache, ...
     """
 
     @classmethod
@@ -76,8 +76,8 @@ class ParallelShelve(object):
         attrs['cache_filename'] = cache_filename
         attrs['item_func']      = item_func
 
-        ps = ParallelShelve(attrs)
-        if (len(ps.datasource) - len(ps.result)) > ps.offset: ps.recache()
+        ps = ParallelData(attrs)
+        if (len(ps.datasource) - ps.result_len) > ps.offset: ps.recache()
 
         return ps.result
 
@@ -86,7 +86,9 @@ class ParallelShelve(object):
         second_params = {"process_count" : None,
                          "chunk_size"    : 1000,
                          "merge_size"    : 10000,
-                         "offset"        : 10,}
+                         "offset"        : 10,
+                         "output_lambda" : None,
+                         }
 
         for k1 in first_params: setattr(self, k1, params[k1])
         for k1 in second_params:
@@ -104,9 +106,10 @@ class ParallelShelve(object):
         self.scope_limit   = fix_offset(fixed_scope_count / self.process_count)
 
         self.result = self.connnection()
-        if len(self.result) == 0: os.system("rm -f %s" % self.cache_filename)
+        self.result_len = len(self.result)
+        if self.result_len == 0: os.system("rm -f %s" % self.cache_filename)
 
-    def connnection(self): return shelve.open(self.cache_filename, writeback=False)
+    def connnection(self): return shelve.open(self.cache_filename, flag='c', writeback=False)
 
     def recache(self):
         items_cPickles = lambda : sorted( \
@@ -143,11 +146,15 @@ class ParallelShelve(object):
         sleep_sec = lambda : len(multiprocessing.active_children())
         while sleep_sec() > 0: time.sleep(sleep_sec())
 
-        self.result = self.connnection()
+        if not self.output_lambda: self.result = self.connnection()
         def write(tmp_items):
-            for item_id, item1 in process_notifier(tmp_items):
-                self.result[item_id] = item1
-            self.result.sync()
+            if self.output_lambda:
+                self.output_lambda(tmp_items)
+            else:
+                for item_id, item1 in process_notifier(tmp_items):
+                    self.result[item_id] = item1
+                self.result.sync()
+
             return []
 
         print "\n"*5, "begin merge ..."
