@@ -45,14 +45,12 @@ class ModelCacheDataSource(DataSource):
         return self.datasource.keys()
 
 class MongodbDataSource(DataSource):
-    def post_hook(self):
-        if 'collection' not in dir(self.datasource):
-            self.datasource = self.datasource.find({})
-
     def __len__(self): return self.datasource.count()
 
     def scope_range(self, from_idx, to_idx):
-        return self.datasource.skip(from_idx).limit(to_idx-from_idx)
+        scope = self.datasource
+        if 'collection' not in dir(scope): scope = scope.find()
+        return scope.skip(from_idx).limit(to_idx-from_idx)
 
     def convert_iter_to_item(self, iter1):    return iter1
     def convert_iter_to_item_id(self, iter1): return unicode(iter1.get('_id', u""))
@@ -118,7 +116,6 @@ class ParallelData(object):
                         )
 
         def process__load_items_func(from_idx, to_idx):
-
             while (from_idx < to_idx):
                 def load_items_func():
                     return [ \
