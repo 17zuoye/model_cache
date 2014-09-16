@@ -103,11 +103,13 @@ class ParallelData(object):
         fixed_scope_count  = fix_offset(self.scope_count)
         self.scope_limit   = fix_offset(fixed_scope_count / self.process_count)
 
-        self.result = self.connnection()
-        self.result_len = len(self.result)
+        if not self.output_lambda: self.result = self.connnection
+        self.result_len = len(self.result or {})
         if self.result_len == 0: os.system("rm -f %s" % self.cache_filename)
 
-    def connnection(self): return shelve.open(self.cache_filename, flag='c', writeback=False)
+    @cached_property
+    def connnection(self):
+        return shelve.open(self.cache_filename, flag='c', writeback=False)
 
     def recache(self):
         items_cPickles = lambda : sorted( \
@@ -143,7 +145,6 @@ class ParallelData(object):
         sleep_sec = lambda : len(multiprocessing.active_children())
         while sleep_sec() > 0: time.sleep(sleep_sec())
 
-        if not self.output_lambda: self.result = self.connnection()
         def write(tmp_items):
             if self.output_lambda:
                 self.output_lambda([i1[1] for i1 in tmp_items])
