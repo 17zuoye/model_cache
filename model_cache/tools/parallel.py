@@ -103,6 +103,7 @@ class ParallelData(object):
         fixed_scope_count  = fix_offset(self.scope_count)
         self.scope_limit   = fix_offset(fixed_scope_count / self.process_count)
 
+        self.result = None
         if not self.output_lambda: self.result = self.connnection
         self.result_len = len(self.result or {})
         if self.result_len == 0: os.system("rm -f %s" % self.cache_filename)
