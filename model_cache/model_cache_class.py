@@ -50,6 +50,7 @@ class ModelCacheClass(object):
 
     @classmethod
     def pull_data(cls):
+# TODO replace with ParallelData
         print; print "[LOAD] %s [INTO] %s" % (cls.original.model.__module__, cls.__module__)
 
         original_model_count = set_default_value([ \
@@ -59,8 +60,11 @@ class ModelCacheClass(object):
 
         if len(cls) / float(original_model_count) < cls.original.percentage:
             print "[load ids cache] ..."
+
             cls.datadict.sync() # sync first
-            ids_cache = {item_id1 : True for item_id1, item1 in process_notifier(cls.datadict.datadict)}
+
+            ids_cache = set([])
+            for item_id1, item1 in process_notifier(cls.datadict.datadict): ids_cache.add(item_id1)
 
             items = []
             for e1 in process_notifier(cls.original.model):
