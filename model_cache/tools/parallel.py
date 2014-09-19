@@ -112,8 +112,11 @@ class ParallelData(object):
         return shelve.open(self.cache_filename, flag='c', writeback=False)
 
     def recache(self):
+        # compact with shelve module generate "dat, dir, bak" three posfix files
+        name_regexp = self.cache_filename + '.[0-9]*'
+
         items_cPickles = lambda : sorted( \
-                            glob.glob(self.cache_filename + '.*'), \
+                            glob.glob(name_regexp), \
                             key=lambda f1: int(f1.split("/")[-1].split(".")[-1]) # sort by chunk steps
                         )
 
