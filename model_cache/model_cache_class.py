@@ -53,39 +53,11 @@ class ModelCacheClass(object):
     def pull_data(cls):
         print; print "[LOAD] %s [INTO] %s" % (cls.original.model.__module__, cls.__module__)
 
-        # model_cache TODO ?
+        # default is list, so mongodb, mysql can be compacted.
         ParallelData.process(cls.original.model, 'list', cls.dbpath, \
                 output_lambda=lambda items: cls.feed_data(items), \
                 id_func=cls.original.read_id_lambda,
                 )
-
-        """
-        original_model_count = set_default_value([ \
-                lambda : cls.original.model.count(), \
-                lambda : len(cls.original.model), \
-                ], u"original.model is invalid!")
-
-        if len(cls) / float(original_model_count) < cls.original.percentage:
-            print "[load ids cache] ..."
-
-            cls.datadict.sync() # sync first
-
-            ids_cache = set([])
-            for item_id1, item1 in process_notifier(cls.datadict.datadict): ids_cache.add(item_id1)
-
-            items = []
-            for e1 in process_notifier(cls.original.model):
-                if cls.original.read_id_lambda(e1) in ids_cache: continue
-                if cls.original.filter_lambda(e1): continue
-
-                items.append(cls(e1))
-
-                if len(items) > 10000:
-                    cls.feed_data(items)
-                    items = []
-            cls.feed_data(items)
-            del ids_cache
-        """
 
     @classmethod
     def feed_data(cls, items=[]):

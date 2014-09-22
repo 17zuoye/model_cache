@@ -3,7 +3,7 @@
 import os, glob, time, math, itertools
 import multiprocessing
 import shelve
-from etl_utils import process_notifier, cpickle_cache, cached_property
+from etl_utils import process_notifier, cpickle_cache, cached_property, set_default_value
 from termcolor import cprint
 
 def pn(msg): cprint(msg, 'blue')
@@ -34,7 +34,13 @@ class ListLikeDatasource(Datasource):
             except:
                 None
 
-    def __len__(self): return self.datasource.count()
+    def __len__(self):
+        result = set_default_value([ \
+                    lambda : self.datasource.count(), \
+                    lambda : len(self.datasource), \
+                    ], u"self.datasource is invalid!")
+        return result
+
     def __iter__(self):
         for v1 in self.datasource:
             yield unicode(self.id_func(v1)), v1
