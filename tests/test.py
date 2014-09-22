@@ -29,6 +29,8 @@ class TestModelCache(unittest.TestCase):
     def test_load_from(self):
         os.system("rm -rf Foobar")
         os.system("mkdir  Foobar")
+        import time; time.sleep(2)
+
         total = 100000
         original_model_data = OriginalModel.fake(total)
         Foobar = generate_test_model_cache(original_model_data)

@@ -18,7 +18,7 @@ class Datasource(object):
     def __len__(self): raise NotImplemented
     def __iter__(self): raise NotImplemented
 
-class DictDatasource(Datasource):
+class DictLikeDatasource(Datasource):
 
     def __len__(self): return len(self.datasource)
     def __iter__(self):
@@ -105,7 +105,7 @@ class ParallelData(object):
     def process(cls, datasource, datasource_type, cache_filename, **attrs):
         attrs['datasource']     = {
                 "list" : ListLikeDatasource,
-                "dict" : DictDatasource
+                "dict" : DictLikeDatasource,
             }[datasource_type](datasource)
         attrs['cache_filename'] = cache_filename
 
