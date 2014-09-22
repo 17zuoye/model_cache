@@ -183,10 +183,11 @@ class ParallelData(object):
                 pn("[cache__cpu] %s ... %s" % (cpu_offset, fq.todo_list))
                 for f1 in fq.todo_list:
                     if not f1.is_exists(): continue
+                    if f1.is_exists('cpu'): continue
                     try:
                         io_items = cpickle_cache(f1.io_name(), lambda : not_exist)
                         cpu_items = [[i1[0], self.item_func(i1[1])] for i1 in io_items]
-                        cpickle_cache(cpu_prefix + unicode(f1.offset), lambda : cpu_items)
+                        cpickle_cache(f1.cpu_name(), lambda : cpu_items)
                         f1.done = True
                     except: # 在IO进程中还没有写完这个文件
                         continue
