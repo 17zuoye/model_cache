@@ -8,44 +8,36 @@ from termcolor import cprint
 
 def pn(msg): cprint(msg, 'blue')
 
-class DataSource(object):
+class Datasource(object):
     def __init__(self, datasource):
         self.datasource = datasource
         self.post_hook()
+        self.id_func = None
 
     def post_hook(self): pass
     def __len__(self): raise NotImplemented
     def __iter__(self): raise NotImplemented
 
-class ModelCacheDataSource(DataSource):
-
-    def post_hook(self):
-        assert 'datadict' in dir(self.datasource), u"datasource should be a ModelCache"
+class DictDatasource(Datasource):
 
     def __len__(self): return len(self.datasource)
     def __iter__(self):
         for k1, v1 in self.datasource.iteritems():
             yield k1, v1
 
-    @cached_property
-    def item_ids(self):
-        # TODO 也许可以优化为iter，但是不取出来无法对键进行分割
-        # 现在的问题是keys浪费内存，特别是百千万级别时
-
-        # multiple process can't share the same file instance which forked from the same parent process
-        if self.datasource.original.storage_type != 'memory': self.datasource.reconnect()
-
-        return self.datasource.keys()
-
-class MongodbDataSource(DataSource):
+class ListLikeDatasource(Datasource):
     def post_hook(self):
+        # compact with mongodb
         if 'collection' not in dir(self.datasource):
-            self.datasource = self.datasource.find()
+            try:
+                self.datasource = self.datasource.find()
+            except:
+                None
 
     def __len__(self): return self.datasource.count()
     def __iter__(self):
         for v1 in self.datasource:
-            yield unicode(v1.get('_id', '')), v1
+            yield unicode(self.id_func(v1)), v1
 
 class PickleFile(object):
     """ 序列化文件相关 """
@@ -88,22 +80,28 @@ class ActiveChildrenManagement(object):
 
 class ParallelData(object):
     """
-    Input:    DataSource
+    Input:    Datasource
 
     => multiprocessing <=
 
     Output:   shelve, model_cache, ...
+
+    流程图
+    1. 划分好进程数
+    2. fork 1个进程读取IO，并按进程数分片
+    3. fork进程数，按总数和取模知道那些分片归自己处理，包括IO没完成的
+    4. 这样23同时处理。
+
+    同时也解决skip+limit划分中途出错问题。
     """
 
     @classmethod
-    def process(cls, datasource, datasource_type, cache_filename, item_func, **attrs):
+    def process(cls, datasource, datasource_type, cache_filename, **attrs):
         attrs['datasource']     = {
-                "mongodb" : MongodbDataSource,
-                "model_cache" : ModelCacheDataSource
+                "list" : ListLikeDatasource,
+                "dict" : DictDatasource
             }[datasource_type](datasource)
-
         attrs['cache_filename'] = cache_filename
-        attrs['item_func']      = item_func
 
         ps = ParallelData(attrs)
         if (len(ps.datasource) - ps.result_len) > ps.offset: ps.recache()
@@ -111,18 +109,22 @@ class ParallelData(object):
         return ps.result
 
     def __init__(self, params):
-        first_params = "datasource cache_filename item_func".split(" ")
-        second_params = {"process_count" : None,
-                         "chunk_size"    : 1000,
-                         "merge_size"    : 10000,
-                         "offset"        : 10,
-                         "output_lambda" : None,
+        default_params = {"process_count"  : None,
+                          "chunk_size"     : 1000,
+                          "merge_size"     : 10000,
+                          "offset"         : 10,
+                          "output_lambda"  : None, # lambda items: None
+                          "cache_filename" : None,
+                          "item_func"      : lambda item1 : item1,
+                          "id_func"        : lambda record: record['_id'],
                          }
 
-        for k1 in first_params: setattr(self, k1, params[k1])
-        for k1 in second_params:
-            default_v1 = second_params.get(k1, False)
+        setattr(self, "datasource", params['datasource'])
+
+        for k1 in default_params:
+            default_v1 = default_params.get(k1, False)
             setattr(self, k1, params.get(k1, default_v1))
+        self.datasource.id_func = params.get('id_func', default_params['id_func'])
 
         if isinstance(self.cache_filename, str):
             self.cache_filename = unicode(self.cache_filename, "UTF-8")
@@ -151,7 +153,6 @@ class ParallelData(object):
         cpu_prefix = self.cache_filename + '.cpu.'
         cpu_regexp = cpu_prefix + '[0-9]*'
 
-
         # A.1. 缓存IO
         def cache__io():
             def persistent(filename, current_items):
@@ -162,9 +163,9 @@ class ParallelData(object):
             for k1, v1 in self.datasource:
                 current_items.append([k1, v1])
                 if len(current_items) >= self.chunk_size:
-                    current_items = persistent(io_prefix + unicode(idx*self.chunk_size), current_items)
-                    idx += 1
-            current_items = persistent(io_prefix + unicode(idx), current_items)
+                    current_items = persistent(io_prefix + unicode(idx), current_items)
+                    idx += self.chunk_size
+            if current_items: persistent(io_prefix + unicode(idx), current_items)
         pn("[cache__io] total ...")
         multiprocessing.Process(target=cache__io).start()
 
@@ -172,13 +173,12 @@ class ParallelData(object):
         def cache__cpu(cpu_offset):
             fq = FileQueue(self.scope_count, self.chunk_size, self.process_count, cpu_offset, \
                            lambda chunk1 : PickleFile(chunk1, io_prefix, cpu_prefix))
-            fq.has_todo()
             while fq.has_todo():
                 pn("[cache__cpu] %s ... %s" % (cpu_offset, fq.todo_list))
                 for f1 in fq.todo_list:
                     if not f1.is_exists(): continue
                     try:
-                        io_items = cpickle_cache(f1.io_name(), lambda : None)
+                        io_items = cpickle_cache(f1.io_name(), lambda : not_exist)
                         cpu_items = [[i1[0], self.item_func(i1[1])] for i1 in io_items]
                         cpickle_cache(cpu_prefix + unicode(f1.offset), lambda : cpu_items)
                         f1.done = True
@@ -206,7 +206,7 @@ class ParallelData(object):
         print "\n"*5, "begin merge ..."
         tmp_items = []
         for f1 in glob.glob(cpu_regexp):
-            chunk = cpickle_cache(f1, lambda: True)
+            chunk = cpickle_cache(f1, lambda: not_exist)
             tmp_items.extend(chunk)
             if len(tmp_items) >= self.merge_size:
                 tmp_items = write(tmp_items)

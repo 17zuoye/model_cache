@@ -12,24 +12,23 @@ from model_cache.tools.parallel import ParallelData
 dbpath = "tests/parallel.db"
 total = 12000
 original_model_data = OriginalModel.fake(total)
-setattr(original_model_data, '__module__', 'original_model')
-Foobar = generate_test_model_cache(original_model_data)
-class Foobar(Foobar): pass # defined as a class, to pickle
 
 os.system("rm -f %s*" % dbpath)
 
 class TestTools(unittest.TestCase):
 
     def test_len(self):
-        Foobar.pull_data()
-
-        repr(Foobar) # preload first_five_items
-        random_item_id = Foobar.first_five_items[0].item_id
-
         def process(item1): time.sleep(0.002); return item1
-        result = ParallelData.process(Foobar, 'model_cache', dbpath, process)
+        result = ParallelData.process(original_model_data, 'list', dbpath, \
+                                        item_func=process, \
+                                        id_func=lambda record: record['id'], \
+                                      )
 
-        self.assertEqual(len(result), len(Foobar))
-        self.assertEqual(result[random_item_id].item_content, Foobar[random_item_id].item_content)
+        #import pdb; pdb.set_trace()
+        self.assertEqual(len(result), len(original_model_data))
+
+        random_item_id = unicode(original_model_data[3]['id'])
+        random_item    = original_model_data[3]['content']
+        self.assertEqual(result[random_item_id]['content'], random_item)
 
 if __name__ == '__main__': unittest.main()
