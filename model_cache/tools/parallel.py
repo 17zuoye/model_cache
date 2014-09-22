@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-import os, glob, time, math
+import os, glob, time, math, itertools
 import multiprocessing
 import shelve
 from etl_utils import process_notifier, cpickle_cache, cached_property
@@ -15,9 +15,7 @@ class DataSource(object):
 
     def post_hook(self): pass
     def __len__(self): raise NotImplemented
-    def scope_range(self, from_idx, to_idx): raise NotImplemented
-    def convert_iter_to_item(self, iter1): raise NotImplemented
-    def convert_iter_to_item_id(self, iter1): raise NotImplemented
+    def __iter__(self): raise NotImplemented
 
 class ModelCacheDataSource(DataSource):
 
@@ -25,14 +23,9 @@ class ModelCacheDataSource(DataSource):
         assert 'datadict' in dir(self.datasource), u"datasource should be a ModelCache"
 
     def __len__(self): return len(self.datasource)
-
-    def scope_range(self, from_idx, to_idx):
-        # NOTE 不知道这里 datasource[item_id1] 随机读写效率如何，虽然 item_ids 其实是磁盘顺序的
-        # 实际跑数据结果表示还是比Sqlite顺序读还快。这里dbm是17K/s, sqlite是14K/s，仅供参考。
-        return self.item_ids[from_idx:to_idx]
-
-    def convert_iter_to_item(self, iter1):    return self.datasource[iter1]
-    def convert_iter_to_item_id(self, iter1): return iter1
+    def __iter__(self):
+        for k1, v1 in self.datasource.iteritems():
+            yield k1, v1
 
     @cached_property
     def item_ids(self):
@@ -45,15 +38,53 @@ class ModelCacheDataSource(DataSource):
         return self.datasource.keys()
 
 class MongodbDataSource(DataSource):
+    def post_hook(self):
+        if 'collection' not in dir(self.datasource):
+            self.datasource = self.datasource.find()
+
     def __len__(self): return self.datasource.count()
+    def __iter__(self):
+        for v1 in self.datasource:
+            yield unicode(v1.get('_id', '')), v1
 
-    def scope_range(self, from_idx, to_idx):
-        scope = self.datasource
-        if 'collection' not in dir(scope): scope = scope.find()
-        return scope.skip(from_idx).limit(to_idx-from_idx)
+class PickleFile(object):
+    """ 序列化文件相关 """
+    def __init__(self, offset, io_prefix, cpu_prefix):
+        self.offset     = offset
+        self.io_prefix  = io_prefix
+        self.cpu_prefix = cpu_prefix
+        self.done       = False
 
-    def convert_iter_to_item(self, iter1):    return iter1
-    def convert_iter_to_item_id(self, iter1): return unicode(iter1.get('_id', u""))
+    def is_exists(self, _type='io'):
+        f1 = getattr(self, (_type + '_name'))()
+        return os.path.exists(f1)
+
+    def io_name(self): return self.io_prefix + unicode(self.offset)
+    def cpu_name(self): return self.cpu_prefix + unicode(self.offset)
+    def __repr__(self): return "<offset:%s, done:%s>" % (self.offset, self.done)
+
+class FileQueue(list):
+    """ 分片文件队列 """
+    def __init__(self, max_size, chunk_size, process_count, offset, file_lambda):
+        super(FileQueue, self).__init__()
+        for chunk1 in itertools.count(0, chunk_size):
+            if (chunk1 - max_size) >= 0: break
+            if (chunk1 / chunk_size) % process_count != offset: continue
+            self.append(file_lambda(chunk1))
+        self.todo_list = list(self)
+
+    def has_todo(self):
+        self.todo_list = filter(lambda f1: not f1.done, self)
+        return bool(self.todo_list)
+
+class ActiveChildrenManagement(object):
+    """ 多进程管理 是否结束 """
+    def __init__(self):
+        self.seconds = 1
+
+    def still(self):
+        self.seconds = len(multiprocessing.active_children())
+        return bool(self.seconds)
 
 class ParallelData(object):
     """
@@ -93,7 +124,8 @@ class ParallelData(object):
             default_v1 = second_params.get(k1, False)
             setattr(self, k1, params.get(k1, default_v1))
 
-        if isinstance(self.cache_filename, str): self.cache_filename = unicode(self.cache_filename, "UTF-8")
+        if isinstance(self.cache_filename, str):
+            self.cache_filename = unicode(self.cache_filename, "UTF-8")
         assert isinstance(self.cache_filename, unicode)
 
         self.process_count = self.process_count or (multiprocessing.cpu_count()-2)
@@ -104,50 +136,62 @@ class ParallelData(object):
         self.scope_limit   = fix_offset(fixed_scope_count / self.process_count)
 
         self.result = None
-        if not self.output_lambda: self.result = self.connnection
+        if not self.output_lambda: self.result = self.connection
         self.result_len = len(self.result or {})
         if self.result_len == 0: os.system("rm -f %s" % self.cache_filename)
 
     @cached_property
-    def connnection(self):
+    def connection(self):
         return shelve.open(self.cache_filename, flag='c', writeback=False)
 
     def recache(self):
-        # compact with shelve module generate "dat, dir, bak" three posfix files
-        name_regexp = self.cache_filename + '.[0-9]*'
+        # compact with shelve module generate "dat, dir, bak" three postfix files
+        io_prefix  = self.cache_filename +  '.io.'
+        io_regexp  = io_prefix +  '[0-9]*'
+        cpu_prefix = self.cache_filename + '.cpu.'
+        cpu_regexp = cpu_prefix + '[0-9]*'
 
-        items_cPickles = lambda : sorted( \
-                            glob.glob(name_regexp), \
-                            key=lambda f1: int(f1.split("/")[-1].split(".")[-1]) # sort by chunk steps
-                        )
 
-        def process__load_items_func(from_idx, to_idx):
-            while (from_idx < to_idx):
-                def load_items_func():
-                    return [ \
-                            [ \
-                                self.datasource.convert_iter_to_item_id(iter1), \
-                                self.item_func(self.datasource.convert_iter_to_item(iter1)), \
-                            ] \
-                                for iter1 in process_notifier(self.datasource.scope_range(from_idx, from_idx+self.chunk_size))]
-                filename = self.cache_filename + u'.' + unicode(from_idx)
-                if not os.path.exists(filename): cpickle_cache(filename, load_items_func)
-                from_idx += self.chunk_size
+        # A.1. 缓存IO
+        def cache__io():
+            def persistent(filename, current_items):
+                cpickle_cache(filename, lambda : current_items)
+                return []
+            current_items = []
+            idx = 0
+            for k1, v1 in self.datasource:
+                current_items.append([k1, v1])
+                if len(current_items) >= self.chunk_size:
+                    current_items = persistent(io_prefix + unicode(idx*self.chunk_size), current_items)
+                    idx += 1
+            current_items = persistent(io_prefix + unicode(idx), current_items)
+        pn("[cache__io] total ...")
+        multiprocessing.Process(target=cache__io).start()
 
-        # 检查所有items是否都存在
-        if len(items_cPickles()) < math.ceil(self.scope_count / float(self.chunk_size)):
-            pn("[begin parallel process items] ...")
-            for idx in xrange(self.process_count):
-                from_idx = idx * self.scope_limit
-                to_idx   = (idx + 1) * self.scope_limit - 1
-                if to_idx > self.scope_count: to_idx = self.scope_count
-                pn("[multiprocessing] range %i - %i " % (from_idx, to_idx))
-                multiprocessing.Process(target=process__load_items_func, \
-                                        args=tuple((from_idx, to_idx,))).start()
+        # A.2. 在IO基础上缓存CPU
+        def cache__cpu(cpu_offset):
+            fq = FileQueue(self.scope_count, self.chunk_size, self.process_count, cpu_offset, \
+                           lambda chunk1 : PickleFile(chunk1, io_prefix, cpu_prefix))
+            fq.has_todo()
+            while fq.has_todo():
+                pn("[cache__cpu] %s ... %s" % (cpu_offset, fq.todo_list))
+                for f1 in fq.todo_list:
+                    if not f1.is_exists(): continue
+                    try:
+                        io_items = cpickle_cache(f1.io_name(), lambda : None)
+                        cpu_items = [[i1[0], self.item_func(i1[1])] for i1 in io_items]
+                        cpickle_cache(cpu_prefix + unicode(f1.offset), lambda : cpu_items)
+                        f1.done = True
+                    except: # 在IO进程中还没有写完这个文件
+                        continue
+                time.sleep(1)
+        for cpu_offset in xrange(self.process_count):
+            multiprocessing.Process(target=cache__cpu, args=(cpu_offset,)).start()
 
+        # B. 在前面基础上合并全部
         # Check if extract from original is finished.
-        sleep_sec = lambda : len(multiprocessing.active_children())
-        while sleep_sec() > 0: time.sleep(sleep_sec())
+        acm = ActiveChildrenManagement()
+        while acm.still(): time.sleep(acm.seconds)
 
         def write(tmp_items):
             if self.output_lambda:
@@ -161,8 +205,8 @@ class ParallelData(object):
 
         print "\n"*5, "begin merge ..."
         tmp_items = []
-        for pickle_filename in items_cPickles():
-            chunk = cpickle_cache(pickle_filename, lambda: True)
+        for f1 in glob.glob(cpu_regexp):
+            chunk = cpickle_cache(f1, lambda: True)
             tmp_items.extend(chunk)
             if len(tmp_items) >= self.merge_size:
                 tmp_items = write(tmp_items)
