@@ -6,8 +6,12 @@ class OriginalModel(list):
 
     @classmethod
     def fake(cls, num):
-        return cls([{'id': idx1, 'content': 'content_' + str(idx1)} \
+        result = cls([{'id': idx1, 'content': 'content_' + str(idx1)} \
                     for idx1 in xrange(num)])
+        setattr(result, '__module__', 'original_model')
+        return result
+
+    def count(self): return len(self)
 
 
 class IncludedClass(object):
@@ -29,7 +33,11 @@ def generate_test_model_cache(data):
         inc = 0
 
         def init__load_data(self, record):
-            Foobar.inc += 1
-            self.item_id = str(Foobar.inc)
-            self.item_content = unicode(self.item_id)
+            if record:
+                self.item_id = record['id']
+                self.item_content = unicode(record['content'])
+            else:
+                Foobar.inc += 1
+                self.item_id = str(Foobar.inc)
+                self.item_content = unicode(self.item_id)
     return Foobar

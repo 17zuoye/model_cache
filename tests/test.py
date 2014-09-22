@@ -27,9 +27,10 @@ class TestModelCache(unittest.TestCase):
         self.assertEqual(len(Foobar), 2)
 
     def test_load_from(self):
+        os.system("rm -rf Foobar")
+        os.system("mkdir  Foobar")
         total = 100000
         original_model_data = OriginalModel.fake(total)
-        setattr(original_model_data, '__module__', 'original_model')
         Foobar = generate_test_model_cache(original_model_data)
 
         repr(Foobar) # when 0 items

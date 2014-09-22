@@ -2,6 +2,7 @@
 
 import json
 from .storage import *
+from .tools.parallel import ParallelData
 
 class ModelCacheClass(object):
 
@@ -16,7 +17,7 @@ class ModelCacheClass(object):
 
         self.init__load_data(record)
 
-        assert self.item_id, "self.item_id should be assigned in self.load_data function!"
+        assert self.item_id is not None, "self.item_id should be assigned in self.load_data function!"
         assert isinstance(self.item_content, unicode), \
                 ("self.item_content should be assigned as unicode in self.load_data function! %s" \
                     % repr(self.item_content))
@@ -50,9 +51,15 @@ class ModelCacheClass(object):
 
     @classmethod
     def pull_data(cls):
-# TODO replace with ParallelData
         print; print "[LOAD] %s [INTO] %s" % (cls.original.model.__module__, cls.__module__)
 
+        # model_cache TODO ?
+        ParallelData.process(cls.original.model, 'list', cls.dbpath, \
+                output_lambda=lambda items: cls.feed_data(items), \
+                id_func=cls.original.read_id_lambda,
+                )
+
+        """
         original_model_count = set_default_value([ \
                 lambda : cls.original.model.count(), \
                 lambda : len(cls.original.model), \
@@ -78,15 +85,15 @@ class ModelCacheClass(object):
                     items = []
             cls.feed_data(items)
             del ids_cache
+        """
 
     @classmethod
     def feed_data(cls, items=[]):
         # items 必定是list, 经过cPickle反序列化回来的
         """ 也许reopen在build_indexes解决sqlite close等问题 """
         for i1 in items:
+            if not isinstance(i1, cls): i1 = cls(i1)
             # Fix InterfaceError: Error binding parameter 0 - probably unsupported type
             assert isinstance(i1.item_id, (str, unicode, int,)), ("not " + repr(i1.item_id))
-
             cls.datadict[i1.item_id] = i1
-
         cls.datadict.sync()
