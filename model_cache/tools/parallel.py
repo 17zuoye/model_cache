@@ -159,17 +159,27 @@ class ParallelData(object):
         cpu_prefix = self.cache_filename + '.cpu.'
         cpu_regexp = cpu_prefix + '[0-9]*'
 
+        os.system("cd %s" % os.path.dirname(self.cache_filename))
+
         # A.1. 缓存IO
         def cache__io():
             def persistent(filename, current_items):
                 cpickle_cache(filename, lambda : current_items)
                 return []
+
+            # A.1.1 如果全部缓存了，就不处理了
+            if (len(self.datasource) / self.chunk_size) + 1 == len(glob.glob(io_regexp)):
+                return False
+
+            # A.1.2 否则还是重新处理一遍
             current_items = []
             idx = 0
             for k1, v1 in self.datasource:
                 current_items.append([k1, v1])
                 if len(current_items) >= self.chunk_size:
-                    current_items = persistent(io_prefix + unicode(idx), current_items)
+                    cache_path = io_prefix + unicode(idx)
+                    os.system("rm -f %s" % cache_path)
+                    current_items = persistent(cache_path, current_items)
                     idx += self.chunk_size
             if current_items: persistent(io_prefix + unicode(idx), current_items)
         pn("[cache__io] total ...")
