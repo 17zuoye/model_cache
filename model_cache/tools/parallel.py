@@ -233,7 +233,8 @@ class ParallelData(object):
 
         print "\n"*5, "begin merge ..."
         tmp_items = []
-        for f1 in glob.glob(cpu_regexp):
+        fs = sorted(glob.glob(cpu_regexp), key=lambda f1: int(f1.split("/")[-1].split(".")[-1]))
+        for f1 in fs:
             chunk = cpickle_cache(f1, lambda: not_exist)
             tmp_items.extend(chunk)
             if len(tmp_items) >= self.merge_size:
