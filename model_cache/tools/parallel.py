@@ -18,12 +18,19 @@ class Datasource(object):
     def __len__(self): raise NotImplemented
     def __iter__(self): raise NotImplemented
 
+    def reconnect_after_fork(self): return self
+
 class DictLikeDatasource(Datasource):
+    def post_hook(self):
+        if "reconnect" in dir(self.datasource):
+            self.datasource.reconnect()
 
     def __len__(self): return len(self.datasource)
     def __iter__(self):
         for k1, v1 in self.datasource.iteritems():
             yield k1, v1
+
+    reconnect_after_fork = post_hook
 
 class ListLikeDatasource(Datasource):
     def post_hook(self):
@@ -44,6 +51,8 @@ class ListLikeDatasource(Datasource):
     def __iter__(self):
         for v1 in self.datasource:
             yield unicode(self.id_func(v1)), v1
+
+    reconnect_after_fork = post_hook
 
 class PickleFile(object):
     """ 序列化文件相关 """
@@ -99,6 +108,8 @@ class ParallelData(object):
     4. 这样23同时处理。
 
     同时也解决skip+limit划分中途出错问题。
+
+    每个进程的CPU占用率取决于这些并行任务的CPU计算是否繁重。
     """
 
     @classmethod
@@ -172,12 +183,16 @@ class ParallelData(object):
 
         # A.1. 缓存IO
         def cache__io():
+            self.datasource.reconnect_after_fork()
+
+            pn("[cache__io] begin total ...")
             def persistent(filename, current_items):
                 cpickle_cache(filename, lambda : current_items)
                 return []
 
             # A.1.1 如果全部缓存了，就不处理了
             if (len(self.datasource) / self.chunk_size) + 1 == len(glob.glob(io_regexp)):
+                pn("[cache__io] end total ...")
                 return False
 
             # A.1.2 否则还是重新处理一遍
@@ -191,7 +206,7 @@ class ParallelData(object):
                     current_items = persistent(cache_path, current_items)
                     idx += self.chunk_size
             if current_items: persistent(io_prefix + unicode(idx), current_items)
-        pn("[cache__io] total ...")
+            pn("[cache__io] end total ...")
         multiprocessing.Process(target=cache__io).start()
 
         # A.2. 在IO基础上缓存CPU
@@ -201,6 +216,8 @@ class ParallelData(object):
             while fq.has_todo():
                 pn("[cache__cpu] %s ... %s" % (cpu_offset, fq.todo_list))
                 for f1 in fq.todo_list:
+                    print "io", f1.io_name(), "cpu", f1.cpu_name()
+                    print
                     if not f1.is_exists('io'): continue
                     if f1.is_exists('cpu'):
                         f1.done = True
@@ -211,6 +228,7 @@ class ParallelData(object):
                         cpickle_cache(f1.cpu_name(), lambda : cpu_items)
                         f1.done = True
                     except: # 在IO进程中还没有写完这个文件
+                        print "Maybe IO error happened ..."
                         continue
                 time.sleep(1)
         for cpu_offset in xrange(self.process_count):
