@@ -117,17 +117,17 @@ class ParallelData(object):
         return ps.result
 
     def __init__(self, params):
-        default_params = {"process_count"  : None,
-                          "chunk_size"     : 1000,
-                          "merge_size"     : 10000,
-                          "offset"         : 10,
+        default_params = {"process_count"     : None,
+                          "chunk_size"        : 1000,
+                          "merge_size"        : 10000,
+                          "offset"            : 10,
 
-                          "output_lambda"  : None, # lambda items: None
-                          "output_len"     : None,
+                          "output_lambda"     : None, # lambda items: None
+                          "output_len_lambda" : None,
 
-                          "cache_filename" : None,
-                          "item_func"      : lambda item1 : item1,
-                          "id_func"        : lambda record: record['_id'],
+                          "cache_filename"    : None,
+                          "item_func"         : lambda item1 : item1,
+                          "id_func"           : lambda record: record['_id'],
                          }
 
         setattr(self, "datasource", params['datasource'])
@@ -141,6 +141,8 @@ class ParallelData(object):
             self.cache_filename = unicode(self.cache_filename, "UTF-8")
         assert isinstance(self.cache_filename, unicode)
 
+        if self.output_len_lambda is None: self.output_len_lambda = lambda : 0
+
         self.process_count = self.process_count or (multiprocessing.cpu_count()-2)
         self.scope_count   = len(self.datasource)
 
@@ -150,7 +152,7 @@ class ParallelData(object):
 
         if self.output_lambda:
             self.result = None
-            self.result_len = self.output_len or 0
+            self.result_len = self.output_len_lambda()
         else:
             self.result = self.connection
             self.result_len = len(self.result)
@@ -237,3 +239,6 @@ class ParallelData(object):
             if len(tmp_items) >= self.merge_size:
                 tmp_items = write(tmp_items)
             tmp_items = write(tmp_items)
+
+        # update cache result len
+        self.result_len = self.output_len_lambda()
