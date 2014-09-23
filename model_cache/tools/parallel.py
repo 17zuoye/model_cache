@@ -109,7 +109,7 @@ class ParallelData(object):
 
     同时也解决skip+limit划分中途出错问题。
 
-    每个进程的CPU占用率取决于这些并行任务的CPU计算是否繁重。
+    每个进程的CPU占用率取决于这些并行任务的CPU计算相对于IO读写的运行时间比例。
     """
 
     @classmethod
@@ -152,7 +152,8 @@ class ParallelData(object):
             self.cache_filename = unicode(self.cache_filename, "UTF-8")
         assert isinstance(self.cache_filename, unicode)
 
-        if self.output_len_lambda is None: self.output_len_lambda = lambda : 0
+        if (self.output_lambda is None) and (self.output_len_lambda is None):
+            self.output_len_lambda = lambda : len(self.result)
 
         self.process_count = self.process_count or (multiprocessing.cpu_count()-2)
         self.scope_count   = len(self.datasource)
@@ -216,8 +217,6 @@ class ParallelData(object):
             while fq.has_todo():
                 pn("[cache__cpu] %s ... %s" % (cpu_offset, fq.todo_list))
                 for f1 in fq.todo_list:
-                    print "io", f1.io_name(), "cpu", f1.cpu_name()
-                    print
                     if not f1.is_exists('io'): continue
                     if f1.is_exists('cpu'):
                         f1.done = True
@@ -246,7 +245,6 @@ class ParallelData(object):
                 for item_id, item1 in process_notifier(tmp_items):
                     self.result[item_id] = item1
                 self.result.sync()
-
             return []
 
         print "\n"*5, "begin merge ..."
@@ -257,7 +255,7 @@ class ParallelData(object):
             tmp_items.extend(chunk)
             if len(tmp_items) >= self.merge_size:
                 tmp_items = write(tmp_items)
-            tmp_items = write(tmp_items)
+        tmp_items = write(tmp_items)
 
         # update cache result len
         self.result_len = self.output_len_lambda()
