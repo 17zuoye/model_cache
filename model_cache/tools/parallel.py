@@ -112,6 +112,8 @@ class ParallelData(object):
         ps = ParallelData(attrs)
         if (len(ps.datasource) - ps.result_len) > ps.offset: ps.recache()
 
+        if ps.result_len == 0: os.system("rm -f %s" % ps.cache_filename)
+
         return ps.result
 
     def __init__(self, params):
@@ -146,17 +148,18 @@ class ParallelData(object):
         fixed_scope_count  = fix_offset(self.scope_count)
         self.scope_limit   = fix_offset(fixed_scope_count / self.process_count)
 
-        self.result = None
-        if not self.output_lambda: self.result = self.connection()
-        self.result_len = self.output_len or len(self.result or {})
-        if self.result_len == 0: os.system("rm -f %s" % self.cache_filename)
+        if self.output_lambda:
+            self.result = None
+            self.result_len = self.output_len or 0
+        else:
+            self.result = self.connection
+            self.result_len = len(self.result)
 
+    @cached_property
     def connection(self):
         return shelve.open(self.cache_filename, flag='c', writeback=False)
 
     def recache(self):
-        self.result = self.connection()
-
         # compact with shelve module generate "dat, dir, bak" three postfix files
         io_prefix  = self.cache_filename +  '.io.'
         io_regexp  = io_prefix +  '[0-9]*'
