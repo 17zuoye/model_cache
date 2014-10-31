@@ -151,6 +151,7 @@ class ParallelData(object):
         if isinstance(self.cache_filename, str):
             self.cache_filename = unicode(self.cache_filename, "UTF-8")
         assert isinstance(self.cache_filename, unicode)
+        self.cache_basename = os.path.basename(self.cache_filename).split(".")[0]
 
         if (self.output_lambda is None) and (self.output_len_lambda is None):
             self.output_len_lambda = lambda : len(self.result)
@@ -186,14 +187,14 @@ class ParallelData(object):
         def cache__io():
             self.datasource.reconnect_after_fork()
 
-            pn("[cache__io] begin total ...")
+            pn("[%s cache__io] begin total ..." % self.cache_basename)
             def persistent(filename, current_items):
                 cpickle_cache(filename, lambda : current_items)
                 return []
 
             # A.1.1 如果全部缓存了，就不处理了
             if (len(self.datasource) / self.chunk_size) + 1 == len(glob.glob(io_regexp)):
-                pn("[cache__io] end total ...")
+                pn("[%s cache__io] end total ..." % self.cache_basename)
                 return False
 
             # A.1.2 否则还是重新处理一遍
@@ -207,7 +208,7 @@ class ParallelData(object):
                     current_items = persistent(cache_path, current_items)
                     idx += self.chunk_size
             if current_items: persistent(io_prefix + unicode(idx), current_items)
-            pn("[cache__io] end total ...")
+            pn("[%s cache__io] end total ..." % self.cache_basename)
         multiprocessing.Process(target=cache__io).start()
 
         # A.2. 在IO基础上缓存CPU
@@ -217,7 +218,7 @@ class ParallelData(object):
             while_step = 0
             while fq.has_todo():
                 while_step += 1
-                pn("[cache__cpu:%s] todo_list := %s, while_step := %s" % (cpu_offset, fq.todo_list, while_step))
+                pn("[%s cache__cpu:%s] todo_list := %s, while_step := %s" % (self.cache_basename, cpu_offset, fq.todo_list, while_step))
                 for f1 in fq.todo_list:
                     if not f1.is_exists('io'): continue
                     if f1.is_exists('cpu'):
