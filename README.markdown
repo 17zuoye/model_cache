@@ -1,7 +1,7 @@
 Model Cache
 ======================
 Cache data in `{ item_id => item_content }` format, supported storage
-are memory, sqlite and redis.
+are memory, shelve, sqlite and redis.
 
 
 License

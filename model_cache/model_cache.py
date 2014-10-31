@@ -4,7 +4,8 @@ import os
 from .storage import *
 from .model_cache_class import ModelCacheClass
 
-class ModelCache():
+class ModelCache(object):
+
     @classmethod
     def connect(cls, original_model, **kwargs):
         # assert original_model's behavior

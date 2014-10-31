@@ -214,8 +214,10 @@ class ParallelData(object):
         def cache__cpu(cpu_offset):
             fq = FileQueue(self.scope_count, self.chunk_size, self.process_count, cpu_offset, \
                            lambda chunk1 : PickleFile(chunk1, io_prefix, cpu_prefix))
+            while_step = 0
             while fq.has_todo():
-                pn("[cache__cpu] %s ... %s" % (cpu_offset, fq.todo_list))
+                while_step += 1
+                pn("[cache__cpu:%s] todo_list := %s, while_step := %s" % (cpu_offset, fq.todo_list, while_step))
                 for f1 in fq.todo_list:
                     if not f1.is_exists('io'): continue
                     if f1.is_exists('cpu'):
