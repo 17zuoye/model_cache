@@ -19,10 +19,12 @@ class TestTools(unittest.TestCase):
 
     def test_len(self):
         def process(item1): time.sleep(0.002); return item1
-        result = ParallelData.process(original_model_data, 'list', dbpath, \
-                                        item_func=process, \
-                                        id_func=lambda record: record['id'], \
-                                      )
+        result = ParallelData.process(original_model_data,
+                                      'list', # or 'dict'
+                                      dbpath,
+                                      item_func=process,
+                                      id_func=lambda record: record['id'],
+                                     )
 
         #import pdb; pdb.set_trace()
         self.assertEqual(len(result), len(original_model_data))

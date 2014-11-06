@@ -12,10 +12,18 @@ class ModelCache(object):
         process_notifier(original_model)
 
         # setup args
+        # NOTE below code is copied to README.
         default_kwargs = {
-                    'cache_dir'      : os.getenv("ModelCacheDir"),
-                    'storage_type'   : 'sqlite',
+                    'cache_dir'      : os.getenv("ModelCacheDir"), # the default.
+
+                    # available storage_types are ['memory', 'sqlite', 'shelve', 'redis']. default
+                    # is 'shelve', which is faster than sqlite
+                    'storage_type'   : 'shelve',
+
+                    # Sync unless current len(ModelCache) is less than original_model in `percentage`.
+                    # NOTE not used
                     'percentage'     : 0.9999,
+
                     'filter_lambda'  : lambda item1: False,
                     'read_id_lambda' : lambda item1: str(item1['_id']),
                     'included_class' : object,

@@ -2,7 +2,6 @@
 
 import json
 from .storage import *
-from .tools.parallel import ParallelData
 
 class ModelCacheClass(object):
 
@@ -54,6 +53,7 @@ class ModelCacheClass(object):
         print; print "[LOAD] %s [INTO] %s" % (cls.original.model.__module__, cls.__module__)
 
         # default is list, so mongodb, mysql can be compacted.
+        from .tools.parallel import ParallelData
         ParallelData.process(cls.original.model, 'list', cls.dbpath, \
                 output_lambda=lambda items: cls.feed_data(items), \
                 output_len_lambda=lambda : len(cls), \
