@@ -1,0 +1,98 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>Model cache by 17zuoye</title>
+
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
+    <script src="javascripts/scale.fix.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+  </head>
+  <body>
+    <div class="wrapper">
+      <header>
+        <h1>Model cache</h1>
+        <p>Cache data in { item_id =&gt; item_content } format, supported storage are memory, sqlite and redis.</p>
+        <p class="view"><a href="https://github.com/17zuoye/model_cache">View the Project on GitHub <small>17zuoye/model_cache</small></a></p>
+        <ul>
+          <li><a href="https://github.com/17zuoye/model_cache/zipball/master">Download <strong>ZIP File</strong></a></li>
+          <li><a href="https://github.com/17zuoye/model_cache/tarball/master">Download <strong>TAR Ball</strong></a></li>
+          <li><a href="https://github.com/17zuoye/model_cache">View On <strong>GitHub</strong></a></li>
+        </ul>
+      </header>
+      <section>
+        <h1>
+<a id="model-cache" class="anchor" href="#model-cache" aria-hidden="true"><span class="octicon octicon-link"></span></a>Model Cache</h1>
+
+<p>Cache data in <code>{ item_id =&gt; item_content }</code> format, supported storage
+are memory, shelve, sqlite and redis.</p>
+
+<h2>
+<a id="example" class="anchor" href="#example" aria-hidden="true"><span class="octicon octicon-link"></span></a>Example</h2>
+
+<h2>
+<a id="1-modelcache" class="anchor" href="#1-modelcache" aria-hidden="true"><span class="octicon octicon-link"></span></a>1. ModelCache</h2>
+
+<div class="highlight highlight-python"><pre><span class="pl-k">from</span> model_cache <span class="pl-k">import</span> ModelCache
+
+default_kwargs <span class="pl-k">=</span> {
+                    <span class="pl-s1"><span class="pl-pds">'</span>cache_dir<span class="pl-pds">'</span></span>      : os.getenv(<span class="pl-s1"><span class="pl-pds">"</span>ModelCacheDir<span class="pl-pds">"</span></span>), <span class="pl-c"># the default.</span>
+
+                    <span class="pl-c"># available storage_types are ['memory', 'sqlite', 'shelve', 'redis']. default</span>
+                    <span class="pl-c"># is 'shelve', which is faster than sqlite</span>
+                    <span class="pl-s1"><span class="pl-pds">'</span>storage_type<span class="pl-pds">'</span></span>   : <span class="pl-s1"><span class="pl-pds">'</span>shelve<span class="pl-pds">'</span></span>,
+
+                    <span class="pl-s1"><span class="pl-pds">'</span>filter_lambda<span class="pl-pds">'</span></span>  : <span class="pl-st">lambda</span> <span class="pl-vpf">item1</span>: <span class="pl-c1">False</span>,
+                    <span class="pl-s1"><span class="pl-pds">'</span>read_id_lambda<span class="pl-pds">'</span></span> : <span class="pl-st">lambda</span> <span class="pl-vpf">item1</span>: <span class="pl-s3">str</span>(item1[<span class="pl-s1"><span class="pl-pds">'</span>_id<span class="pl-pds">'</span></span>]),
+                    <span class="pl-s1"><span class="pl-pds">'</span>included_class<span class="pl-pds">'</span></span> : <span class="pl-s3">object</span>,
+                }
+<span class="pl-en">@</span><span class="pl-en">ModelCache.connect</span>(mongo_query, default_kwargs)
+<span class="pl-st">class</span> <span class="pl-en">Foobar</span>:
+    <span class="pl-st">def</span> <span class="pl-en">init__load_data</span>(<span class="pl-vpf">self</span>, <span class="pl-vpf">record</span>)
+        self.<span class="pl-vpf">item_id</span>      <span class="pl-k">=</span> process1(record) <span class="pl-c"># must should be string or unicode like object.</span>
+        self.<span class="pl-vpf">item_content</span> <span class="pl-k">=</span> process1(record)
+
+Foobar.pull_data() # Use ParallelData.process <span class="pl-vpf">API</span>
+
+len(<span class="pl-vpf">Foobar</span>) # get total <span class="pl-vpf">count</span>
+<span class="pl-vpf">Foobar_a</span> <span class="pl-k">=</span> Foobar[Foobar_a_id] <span class="pl-c"># fetch Foobar_a</span>
+del Foobar[Foobar_a_id] # remove <span class="pl-vpf">Foobar_a</span>
+Foobar[Foobar_b_id] = Foobar_b # remove <span class="pl-vpf">Foobar_b</span>
+Foobar.feed_data([<span class="pl-vpf">Foobar_c</span>, <span class="pl-vpf">Foobar_d</span>, ...]) # save and persist <span class="pl-vpf">data</span>
+
+Foobar.reconnect() # reopen persistent file descriptor if original is <span class="pl-vpf">gone</span></pre></div>
+
+<h2>
+<a id="2-paralleldata" class="anchor" href="#2-paralleldata" aria-hidden="true"><span class="octicon octicon-link"></span></a>2. ParallelData</h2>
+
+<div class="highlight highlight-python"><pre><span class="pl-k">from</span> model_cache <span class="pl-k">import</span> ParallelData
+
+
+result <span class="pl-k">=</span> ParallelData.process(original_model_data,
+                              <span class="pl-s1"><span class="pl-pds">'</span>list<span class="pl-pds">'</span></span>, <span class="pl-c"># or 'dict'</span>
+                              dbpath,
+                              <span class="pl-vpf">item_func</span><span class="pl-k">=</span>process,
+                              <span class="pl-vpf">id_func</span><span class="pl-k">=</span><span class="pl-st">lambda</span> <span class="pl-vpf">record</span>: record[<span class="pl-s1"><span class="pl-pds">'</span>id<span class="pl-pds">'</span></span>],
+                             )
+</pre></div>
+
+<h2>
+<a id="license" class="anchor" href="#license" aria-hidden="true"><span class="octicon octicon-link"></span></a>License</h2>
+
+<p>MIT. David Chen @ 17zuoye.</p>
+      </section>
+    </div>
+    <footer>
+      <p>Project maintained by <a href="https://github.com/17zuoye">17zuoye</a></p>
+      <p>Hosted on GitHub Pages &mdash; Theme by <a href="https://github.com/orderedlist">orderedlist</a></p>
+    </footer>
+    <!--[if !IE]><script>fixScale(document);</script><![endif]-->
+    
+  </body>
+</html>
