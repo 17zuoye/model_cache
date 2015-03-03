@@ -113,12 +113,11 @@ class ParallelData(object):
     """
 
     @classmethod
-    def process(cls, datasource, datasource_type, cache_filename, **attrs):
+    def process(cls, datasource, datasource_type, **attrs):
         attrs['datasource']     = {
                 "list" : ListLikeDatasource,
                 "dict" : DictLikeDatasource,
             }[datasource_type](datasource)
-        attrs['cache_filename'] = cache_filename
 
         ps = ParallelData(attrs)
         if (len(ps.datasource) - ps.result_len) > ps.offset: ps.recache()
@@ -128,17 +127,20 @@ class ParallelData(object):
         return ps.result
 
     def __init__(self, params):
-        default_params = {"process_count"     : None,
-                          "chunk_size"        : 1000,
-                          "merge_size"        : 10000,
-                          "offset"            : 10,
-
+        default_params = {
+                          # 1. cache to specify file
+                          "cache_filename"    : None,
+                          # 2. or custom cache
                           "output_lambda"     : None, # lambda items: None
                           "output_len_lambda" : None,
 
-                          "cache_filename"    : None,
                           "item_func"         : lambda item1 : item1,
                           "id_func"           : lambda record: record['_id'],
+
+                          "process_count"     : None,
+                          "chunk_size"        : 1000,
+                          "merge_size"        : 10000,
+                          "offset"            : 10,
                          }
 
         setattr(self, "datasource", params['datasource'])
@@ -148,10 +150,12 @@ class ParallelData(object):
             setattr(self, k1, params.get(k1, default_v1))
         self.datasource.id_func = params.get('id_func', default_params['id_func'])
 
-        if isinstance(self.cache_filename, str):
-            self.cache_filename = unicode(self.cache_filename, "UTF-8")
-        assert isinstance(self.cache_filename, unicode)
-        self.cache_basename = os.path.basename(self.cache_filename).split(".")[0]
+        if self.cache_filename is None:
+            self.cache_basename = repr(self.datasource.__class__).split("'")[1]
+        else:
+            if isinstance(self.cache_filename, str):
+                self.cache_basename = unicode(self.cache_filename, "UTF-8")
+            self.cache_basename = os.path.basename(self.cache_filename).split(".")[0]
 
         if (self.output_lambda is None) and (self.output_len_lambda is None):
             self.output_len_lambda = lambda : len(self.result)
@@ -172,16 +176,17 @@ class ParallelData(object):
 
     @cached_property
     def connection(self):
-        return shelve.open(self.cache_filename, flag='c', writeback=False)
+        return shelve.open(self.cache_filename or self.cache_basename,
+                          flag='c', writeback=False)
 
     def recache(self):
         # compact with shelve module generate "dat, dir, bak" three postfix files
-        io_prefix  = self.cache_filename +  '.io.'
+        io_prefix  = self.cache_basename +  '.io.'
         io_regexp  = io_prefix +  '[0-9]*'
-        cpu_prefix = self.cache_filename + '.cpu.'
+        cpu_prefix = self.cache_basename + '.cpu.'
         cpu_regexp = cpu_prefix + '[0-9]*'
 
-        os.system("cd %s" % os.path.dirname(self.cache_filename))
+        os.system("cd %s" % os.path.dirname(self.cache_basename))
 
         # A.1. 缓存IO
         def cache__io():

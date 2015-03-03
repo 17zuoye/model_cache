@@ -21,7 +21,7 @@ class TestTools(unittest.TestCase):
         def process(item1): time.sleep(0.002); return item1
         result = ParallelData.process(original_model_data,
                                       'list', # or 'dict'
-                                      dbpath,
+                                      cache_filename=dbpath,
                                       item_func=process,
                                       id_func=lambda record: record['id'],
                                      )

@@ -54,7 +54,7 @@ class ModelCacheClass(object):
 
         # default is list, so mongodb, mysql can be compacted.
         from .tools.parallel import ParallelData
-        ParallelData.process(cls.original.model, 'list', cls.dbpath, \
+        ParallelData.process(cls.original.model, 'list', \
                 output_lambda=lambda items: cls.feed_data(items), \
                 output_len_lambda=lambda : len(cls), \
                 id_func=cls.original.read_id_lambda,
