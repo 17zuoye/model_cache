@@ -14,20 +14,20 @@ class ModelCache(object):
         # setup args
         # NOTE below code is copied to README.
         default_kwargs = {
-                    'cache_dir'      : os.getenv("ModelCacheDir"), # the default.
+            'cache_dir': os.getenv("ModelCacheDir"),  # the default.
 
-                    # available storage_types are ['memory', 'sqlite', 'shelve', 'redis']. default
-                    # is 'shelve', which is faster than sqlite
-                    'storage_type'   : 'shelve',
+            # available storage_types are ['memory', 'sqlite', 'shelve', 'redis']. default
+            # is 'shelve', which is faster than sqlite
+            'storage_type': 'shelve',
 
-                    # Sync unless current len(ModelCache) is less than original_model in `percentage`.
-                    # NOTE not used
-                    'percentage'     : 0.9999,
+            # Sync unless current len(ModelCache) is less than original_model in `percentage`.
+            # NOTE not used
+            'percentage': 0.9999,
 
-                    'filter_lambda'  : lambda item1: False,
-                    'read_id_lambda' : lambda item1: str(item1['_id']),
-                    'included_class' : object,
-                }
+            'filter_lambda': lambda item1: False,
+            'read_id_lambda': lambda item1: str(item1['_id']),
+            'included_class': object,
+        }
         for k1, v1 in kwargs.iteritems():
             if k1 in default_kwargs:
                 default_kwargs[k1] = v1
@@ -51,12 +51,15 @@ class ModelCache(object):
                     setattr(ModelCacheClass, k1, getattr(default_kwargs['included_class'], k1))
 
             class _model_cache(decorated_class, ModelCacheClass, default_kwargs['included_class']):
-                class OriginalClass(): pass # so we can setattr here.
+
+                class OriginalClass():
+                    pass  # so we can setattr here.
                 original = OriginalClass()
                 for k1, v1 in default_kwargs.iteritems():
                     setattr(original, k1, v1)
-                    del k1; del v1
-                original.model   = original_model
+                    del k1
+                    del v1
+                original.model = original_model
 
                 # Thx http://stackoverflow.com/questions/4932438/how-to-create-a-custom-string-representation-for-a-class-object/4932473#4932473
                 class MetaClass(type):
@@ -68,27 +71,29 @@ class ModelCache(object):
                         while is_total_len_enough and (len(self.first_five_items) < 5):
                             for item_id1, item1 in self.iteritems():
                                 self.first_five_items.append(item1)
-                                if len(self.first_five_items) == 5: break
+                                if len(self.first_five_items) == 5:
+                                    break
 
                         dots = ", ......" if is_total_len_enough else ""
-                        return (u"<%s has %i items:[%s%s]>" % \
-                                        (self.__name__, len(self), \
-                                        ", ".join([str(item1.item_id) for item1 in self.first_five_items]), \
-                                        dots, )).encode("UTF-8")
+                        return (u"<%s has %i items:[%s%s]>" %
+                                (self.__name__, len(self),
+                                 ", ".join([str(item1.item_id) for item1 in self.first_five_items]),
+                                 dots, )).encode("UTF-8")
                 __metaclass__ = MetaClass
 
                 @classmethod
                 def pickle_path(cls, name):
                     return cls.cache_dir + "/" + name + ".cPickle"
 
-            _model_cache.__name__   = decorated_class.__name__
-            _model_cache.__module__ = decorated_class.__module__ # so can pickle :)
+            _model_cache.__name__ = decorated_class.__name__
+            _model_cache.__module__ = decorated_class.__module__  # so can pickle :)
 
             _model_cache.first_five_items = []
 
-            _model_cache.cache_dir  = os.path.join(cache_dir or u"", _model_cache.__name__)
+            _model_cache.cache_dir = os.path.join(cache_dir or u"", _model_cache.__name__)
             if default_kwargs['storage_type'] != 'memory':
-                if not os.path.isdir(_model_cache.cache_dir): os.makedirs(_model_cache.cache_dir)
+                if not os.path.isdir(_model_cache.cache_dir):
+                    os.makedirs(_model_cache.cache_dir)
             _model_cache.dbpath = None
             if _model_cache.cache_dir:
                 _model_cache.dbpath = os.path.join(_model_cache.cache_dir, _model_cache.__name__ + ".db")

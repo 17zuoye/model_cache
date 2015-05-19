@@ -1,5 +1,12 @@
 Model Cache
 ======================
+[![Build Status](https://img.shields.io/travis/17zuoye/model_cache/master.svg?style=flat)](https://travis-ci.org/17zuoye/model_cache)
+[![Coverage Status](https://coveralls.io/repos/17zuoye/model_cache/badge.svg)](https://coveralls.io/r/17zuoye/model_cache)
+[![Health](https://landscape.io/github/17zuoye/model_cache/master/landscape.svg?style=flat)](https://landscape.io/github/17zuoye/model_cache/master)
+[![Download](https://img.shields.io/pypi/dm/model_cache.svg?style=flat)](https://pypi.python.org/pypi/model_cache)
+[![License](https://img.shields.io/pypi/l/model_cache.svg?style=flat)](https://pypi.python.org/pypi/model_cache)
+
+
 Cache data in `{ item_id => item_content }` format, supported storage
 are memory, shelve, sqlite and redis.
 

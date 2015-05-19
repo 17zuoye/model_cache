@@ -2,31 +2,35 @@
 
 from model_cache import ModelCache
 
+
 class OriginalModel(list):
 
     @classmethod
     def fake(cls, num):
-        result = cls([{'id': idx1, 'content': 'content_' + str(idx1)} \
-                    for idx1 in xrange(num)])
+        result = cls([{'id': idx1, 'content': 'content_' + str(idx1)}
+                      for idx1 in xrange(num)])
         setattr(result, '__module__', 'original_model')
         return result
 
-    def count(self): return len(self)
+    def count(self):
+        return len(self)
 
 
 class IncludedClass(object):
-    def im_include(self): return 1
+
+    def im_include(self):
+        return 1
 
     def init__after(self, record):
         self.overwrite_init__after = True
 
 
-def generate_test_model_cache(data):
+def make_a_foobar(data):
     attrs = {
-              'read_id_lambda' : lambda item1: item1['id'],
-              'storage_type'   : 'memory',
-              'included_class' : IncludedClass,
-             }
+        'read_id_lambda': lambda item1: item1['id'],
+        'storage_type': 'memory',
+        'included_class': IncludedClass,
+    }
 
     @ModelCache.connect(data, **attrs)
     class Foobar():
