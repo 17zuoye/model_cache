@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='model_cache',
-    version='0.1.0',
+    version='0.1.1',
     url='http://github.com/17zuoye/model_cache/',
     license='MIT',
     author='David Chen',
