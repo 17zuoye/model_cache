@@ -7,7 +7,7 @@ Model Cache
 [![License](https://img.shields.io/pypi/l/model_cache.svg?style=flat)](https://pypi.python.org/pypi/model_cache)
 
 
-Cache data in `{ item_id => item_content }` format, supported storage
+Cache data in `{ item_id => item_content }` format, supported storages
 are memory, shelve, sqlite and redis.
 
 

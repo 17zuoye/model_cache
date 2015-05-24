@@ -9,6 +9,7 @@ dict_attrs = ('__getitem__', '__setitem__', '__delitem__',
               'keys', 'values',
               'items', 'iteritems', 'iterkeys', 'itervalues', )
 
+
 class ModelCacheStore(object):
 
     """ 抽取后的Model快速访问，含item_id, 和一系列特征 """

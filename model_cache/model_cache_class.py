@@ -3,6 +3,7 @@
 import json
 from .storage import *
 
+
 class ModelCacheClass(object):
 
     def __init__(self, record={}):

@@ -10,8 +10,10 @@ import shelve
 from etl_utils import process_notifier, cpickle_cache, cached_property, set_default_value
 from termcolor import cprint
 
+
 def pn(msg):
     cprint(msg, 'blue')
+
 
 class Datasource(object):
 
@@ -32,6 +34,7 @@ class Datasource(object):
     def reconnect_after_fork(self):
         return self
 
+
 class DictLikeDatasource(Datasource):
 
     def post_hook(self):
@@ -46,6 +49,7 @@ class DictLikeDatasource(Datasource):
             yield k1, v1
 
     reconnect_after_fork = post_hook
+
 
 class ListLikeDatasource(Datasource):
 
@@ -70,6 +74,7 @@ class ListLikeDatasource(Datasource):
 
     reconnect_after_fork = post_hook
 
+
 class PickleFile(object):
 
     """ 序列化文件相关 """
@@ -93,6 +98,7 @@ class PickleFile(object):
     def __repr__(self):
         return "<offset:%s, done:%s>" % (self.offset, self.done)
 
+
 class FileQueue(list):
 
     """ 分片文件队列 """
@@ -111,6 +117,7 @@ class FileQueue(list):
         self.todo_list = filter(lambda f1: not f1.done, self)
         return bool(self.todo_list)
 
+
 class ActiveChildrenManagement(object):
 
     """ 多进程管理 是否结束 """
@@ -121,6 +128,7 @@ class ActiveChildrenManagement(object):
     def still(self):
         self.seconds = len(multiprocessing.active_children())
         return bool(self.seconds)
+
 
 class ParallelData(object):
 
@@ -192,7 +200,7 @@ class ParallelData(object):
         if (self.output_lambda is None) and (self.output_len_lambda is None):
             self.output_len_lambda = lambda: len(self.result)
 
-        self.process_count = self.process_count or (multiprocessing.cpu_count()-2)
+        self.process_count = self.process_count or (multiprocessing.cpu_count() - 2)
         self.scope_count = len(self.datasource)
 
         fix_offset = lambda num: (num / self.chunk_size + 1) * self.chunk_size
@@ -291,7 +299,7 @@ class ParallelData(object):
                 self.result.sync()
             return []
 
-        print "\n"*5, "begin merge ..."
+        print "\n" * 5, "begin merge ..."
         tmp_items = []
         fs = sorted(glob.glob(cpu_regexp), key=lambda f1: int(f1.split("/")[-1].split(".")[-1]))
         for f1 in fs:

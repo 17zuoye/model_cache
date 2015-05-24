@@ -2,6 +2,7 @@
 
 from ._base import ModelCacheStore
 
+
 class ModelCacheStoreShelve(ModelCacheStore):
 
     """ Hash查找实现 """

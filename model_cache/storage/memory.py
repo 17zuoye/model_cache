@@ -2,6 +2,7 @@
 
 from ._base import ModelCacheStore
 
+
 class ModelCacheStoreMemory(ModelCacheStore):
 
     """ 内存Hash查找实现 """
